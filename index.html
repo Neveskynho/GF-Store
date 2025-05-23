@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
+    <title>GF Store - Beleza e Cosméticos</title>
+</head>
+
+<script src="script.js"></script>
+
+<body>
+    <!-- Header -->
+    <header>
+        <div class="header-container">
+            <div class="logo">
+                GF <span>STORE</span>
+            </div>
+            <div id="nav-menu">
+                <ul>
+                    <li><a href="../index.html" class="active">Home</a></li>
+                    <li class="dropdown">
+                        <a href="#" class="dropdown-toggle">Todos os Produtos</a>
+                        <div class="dropdown-menu">
+                            <a href="categorias/make_pele.html">Make Pele</a>
+                            <a href="categorias/olhos.html">Olhos</a>
+                            <a href="categorias/labios.html">Lábios</a>
+                            <a href="categorias/skincare.html">Skincare</a>
+                            <a href="categorias/cabelo.html">Cabelo</a>
+                            <a href="categorias/features.html">Acessórios</a>
+                            <a href="categorias/perfumaria.html">Perfumaria</a>
+                            <a href="categorias/higiene.html">Higiene</a>
+                            <a href="categorias/closed_box.html">Box Fechado</a>
+                            <a href="categorias/low_products.html">Produtos até R$ 6,00</a>
+                            <a href="categorias/all_products.html">Ver Todos</a>
+                        </div>
+                    </li>
+                    <li><a href="categorias/make_pele.html">Make Pele</a></li>
+                    <li><a href="categorias/olhos.html">Olhos</a></li>
+                    <li><a href="categorias/labios.html">Lábios</a></li>
+                    <li><a href="categorias/skincare.html">Skincare</a></li>
+                    <li><a href="#contato">Contato</a></li>
+                </ul>
+            </div>
+            <div class="menu-toggle" id="menu-toggle">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-content">
+            <h1>BELEZA E CUIDADOS PARA TODOS</h1>
+            <p>Descubra nossa nova coleção de produtos de beleza e maquiagem para realçar sua beleza natural.</p>
+            <a href="javascript:void(0)" onclick="encomendar('Coleção nova')" class="btn">Encomendar agora</a>
+        </div>
+        <div class="hero-image">
+            <div class="slideshow-container">
+                <div class="slide fade">
+                    <img src="https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=800&h=600&fit=crop" alt="Modelo usando maquiagem da nova coleção">
+                </div>
+                <div class="slide fade">
+                    <img src="https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?w=800&h=600&fit=crop" alt="Produtos de skincare">
+                </div>
+                <div class="slide fade">
+                    <img src="https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=800&h=600&fit=crop" alt="Maquiagem para olhos">
+                </div>
+                <div class="dots-container">
+                    <span class="dot"></span>
+                    <span class="dot"></span>
+                    <span class="dot"></span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Info Section -->
+    <section class="info-section">
+        <div class="info-carousel">
+            <div class="info-box">
+                <i class="fas fa-truck"></i>
+                <div class="info-title">Frete</div>
+                <div class="info-text">Entregamos em todo Brasil</div>
+            </div>
+            <div class="info-box">
+                <i class="fas fa-credit-card"></i>
+                <div class="info-title">Parcelamento</div>
+                <div class="info-text">Em até 12x</div>
+            </div>
+            <div class="info-box">
+                <i class="fas fa-shield-alt"></i>
+                <div class="info-title">Segurança</div>
+                <div class="info-text">Seus dados estão seguros</div>
+            </div>
+            <div class="info-box">
+                <i class="fab fa-whatsapp"></i>
+                <div class="info-title">Atendimento</div>
+                <div class="info-text">Estamos sempre disponíveis</div>
+            </div>
+        </div>
+        <div class="info-nav">
+            <button class="info-prev">❮</button>
+            <div class="info-dots-container">
+                <span class="info-dot info-active"></span>
+                <span class="info-dot"></span>
+                <span class="info-dot"></span>
+                <span class="info-dot"></span>
+            </div>
+            <button class="info-next">❯</button>
+        </div>
+    </section>
+
+    <!-- New Arrivals -->
+    <section class="new-arrivals">
+        <h2 class="section-title">Novidades</h2>
+        <div class="products-grid" id="products-container">
+            <!-- Produtos serão carregados dinamicamente -->
+        </div>
+    </section>
+
+    <!-- Promotions -->
+    <section class="promotions">
+        <h2 class="section-title">Promoções</h2>
+        <div class="products-grid" id="promotions-container">
+            <!-- Promoções serão carregadas dinamicamente -->
+        </div>
+    </section>
+
+    <!-- Testimonials -->
+    <section class="testimonials">
+        <h2 class="section-title">O que dizem nossos clientes</h2>
+        <div class="testimonials-grid">
+            <div class="testimonial-card">
+                <div class="testimonial-content">
+                    <p>Comprei vários produtos de maquiagem da GF Store e estou encantada com a qualidade. Os produtos são incríveis e deixam a pele linda!</p>
+                </div>
+                <div class="testimonial-author">
+                    <div class="author-avatar">
+                        <img src="https://images.unsplash.com/photo-1494790108755-2616b612b77c?w=100&h=100&fit=crop&crop=face" alt="Cliente Ana">
+                    </div>
+                    <div class="author-info">
+                        <h4>Ana Silva</h4>
+                        <p>Cliente desde 2023</p>
+                    </div>
+                </div>
+            </div>
+            <div class="testimonial-card">
+                <div class="testimonial-content">
+                    <p>O atendimento é excelente e os produtos de skincare são de ótima qualidade. As entregas são rápidas e o site é muito fácil de navegar.</p>
+                </div>
+                <div class="testimonial-author">
+                    <div class="author-avatar">
+                        <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face" alt="Cliente Pedro">
+                    </div>
+                    <div class="author-info">
+                        <h4>Pedro Santos</h4>
+                        <p>Cliente desde 2024</p>
+                    </div>
+                </div>
+            </div>
+            <div class="testimonial-card">
+                <div class="testimonial-content">
+                    <p>Adoro os produtos da GF Store, principalmente a linha de maquiagem. A qualidade é excelente e os preços são justos. Super recomendo!</p>
+                </div>
+                <div class="testimonial-author">
+                    <div class="author-avatar">
+                        <img src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop&crop=face" alt="Cliente Mariana">
+                    </div>
+                    <div class="author-info">
+                        <h4>Mariana Costa</h4>
+                        <p>Cliente desde 2022</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer id="contato">
+        <div class="footer-container">
+            <div class="footer-col">
+                <h4>GF Store</h4>
+                <ul>
+                    <li><a href="#">Sobre nós</a></li>
+                    <li><a href="#">Nossas lojas</a></li>
+                    <li><a href="#">Trabalhe conosco</a></li>
+                    <li><a href="#">Blog</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h4>Ajuda</h4>
+                <ul>
+                    <li><a href="#">Perguntas frequentes</a></li>
+                    <li><a href="#">Política de entrega</a></li>
+                    <li><a href="#">Política de devolução</a></li>
+                    <li><a href="#">Política de privacidade</a></li>
+                    <li><a href="#">Termos e condições</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h4>Minha conta</h4>
+                <ul>
+                    <li><a href="#">Entrar</a></li>
+                    <li><a href="#">Meus pedidos</a></li>
+                    <li><a href="#">Lista de desejos</a></li>
+                    <li><a href="#">Rastrear pedido</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h4>Contato</h4>
+                <ul>
+                    <li>📱 (11) 95278-9725</li>
+                    <li>✉️ contato@gfstore.com.br</li>
+                    <li>🏠 Av. Principal, 1234, Teresina-PI</li>
+                </ul>
+                <div class="social-links">
+                    <a href="#" title="Facebook">f</a>
+                    <a href="#" title="Instagram">i</a>
+                    <a href="#" title="Twitter">t</a>
+                    <a href="#" title="YouTube">y</a>
+                </div>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2025 GF Store. Todos os direitos reservados.</p>
+        </div>
+    </footer>
+</body>
+</html>

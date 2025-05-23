@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <link rel="stylesheet" href="../styles.css">
+    <title>Acessórios - GF Store</title>
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <div class="header-container">
+            <div class="logo">
+                GF <span>STORE</span>
+            </div>
+            <div id="nav-menu">
+                <ul>
+                    <li><a href="../index.html" class="active">Home</a></li>
+                    <li class="dropdown">
+                        <a href="#" class="dropdown-toggle">Todos os Produtos</a>
+                        <div class="dropdown-menu">
+                            <a href="make_pele.html">Make Pele</a>
+                            <a href="olhos.html">Olhos</a>
+                            <a href="labios.html">Lábios</a>
+                            <a href="skincare.html">Skincare</a>
+                            <a href="cabelo.html">Cabelo</a>
+                            <a href="features.html">Acessórios</a>
+                            <a href="perfumaria.html">Perfumaria</a>
+                            <a href="higiene.html">Higiene</a>
+                            <a href="closed_box.html">Box Fechado</a>
+                            <a href="low_products.html">Produtos até R$ 6,00</a>
+                            <a href="all_products.html">Ver Todos</a>
+                        </div>
+                    </li>
+                    <li><a href="make_pele.html">Make Pele</a></li>
+                    <li><a href="olhos.html">Olhos</a></li>
+                    <li><a href="labios.html">Lábios</a></li>
+                    <li><a href="skincare.html">Skincare</a></li>
+                    <li><a href="#contato">Contato</a></li>
+                </ul>
+            </div>
+            <div class="menu-toggle" id="menu-toggle">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Category Hero -->
+    <section class="category-hero">
+        <div class="category-content">
+            <h1>Acessórios</h1>
+            <p>Complete seu look com nossos acessórios de beleza: pincéis, esponjas, necessaires, espelhos e muito mais.</p>
+        </div>
+    </section>
+
+    <!-- Products Section -->
+    <section class="category-products">
+        <div class="container">
+            <div class="category-header">
+                <h2>Acessórios de Beleza</h2>
+                <div class="filter-sort">
+                    <select id="sort-select">
+                        <option value="name">Ordenar por nome</option>
+                        <option value="price-low">Menor preço</option>
+                        <option value="price-high">Maior preço</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="products-grid" id="products-container">
+                <!-- Produtos serão carregados dinamicamente -->
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-container">
+            <div class="footer-col">
+                <h4>GF Store</h4>
+                <ul>
+                    <li><a href="../index.html">Sobre nós</a></li>
+                    <li><a href="#">Nossas lojas</a></li>
+                    <li><a href="#">Trabalhe conosco</a></li>
+                    <li><a href="#">Blog</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h4>Ajuda</h4>
+                <ul>
+                    <li><a href="#">Perguntas frequentes</a></li>
+                    <li><a href="#">Política de entrega</a></li>
+                    <li><a href="#">Política de devolução</a></li>
+                    <li><a href="#">Política de privacidade</a></li>
+                    <li><a href="#">Termos e condições</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h4>Minha conta</h4>
+                <ul>
+                    <li><a href="#">Entrar</a></li>
+                    <li><a href="#">Meus pedidos</a></li>
+                    <li><a href="#">Lista de desejos</a></li>
+                    <li><a href="#">Rastrear pedido</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h4>Contato</h4>
+                <ul>
+                    <li>📱 (86) 99999-9999</li>
+                    <li>✉️ contato@gfstore.com.br</li>
+                    <li>🏠 Av. Principal, 1234, Teresina-PI</li>
+                </ul>
+                <div class="social-links">
+                    <a href="#" title="Facebook">f</a>
+                    <a href="#" title="Instagram">i</a>
+                    <a href="#" title="Twitter">t</a>
+                    <a href="#" title="YouTube">y</a>
+                </div>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2025 GF Store. Todos os direitos reservados.</p>
+        </div>
+    </footer>
+
+    <script src="../script.js"></script>
+    <script>
+        // Carregamento específico para Acessórios
+        window.onload = function() {
+            loadCategoryProducts('acessorios');
+        };
+    </script>
+</body>
+</html>
