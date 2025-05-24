@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <link rel="stylesheet" href="../styles.css">
-    <title>Todos os Produtos - GF Store</title>
+    <title>Meias - GF Store</title>
 </head>
 <body>
     <!-- Header -->
@@ -49,26 +49,8 @@
     <!-- Category Hero -->
     <section class="category-hero">
         <div class="category-content">
-            <h1>Todos os Produtos</h1>
-            <p>Explore nossa coleção completa de produtos masculinos. Encontre shorts, camisas, calças, dry fits, meias e muito mais em um só lugar.</p>
-        </div>
-    </section>
-
-    <!-- Filter Section -->
-    <section class="filter-section">
-        <div class="container">
-            <div class="filters">
-                <h3>Filtrar por categoria:</h3>
-                <div class="filter-buttons">
-                    <button class="filter-btn active" data-category="all">Todos</button>
-                    <button class="filter-btn" data-category="shorts">Shorts</button>
-                    <button class="filter-btn" data-category="camisas">Camisas</button>
-                    <button class="filter-btn" data-category="calcas">Calças</button>
-                    <button class="filter-btn" data-category="dry-fits">Dry Fits</button>
-                    <button class="filter-btn" data-category="meias">Meias</button>
-                    <button class="filter-btn" data-category="acessorios">Acessórios</button>
-                </div>
-            </div>
+            <h1>Meias</h1>
+            <p>Descubra nossa linha completa de meias masculinas: sociais, esportivas, running, invisíveis e muito mais para o seu conforto diário.</p>
         </div>
     </section>
 
@@ -76,13 +58,12 @@
     <section class="category-products">
         <div class="container">
             <div class="category-header">
-                <h2>Catálogo Completo</h2>
+                <h2>Meias</h2>
                 <div class="filter-sort">
                     <select id="sort-select">
                         <option value="name">Ordenar por nome</option>
                         <option value="price-low">Menor preço</option>
                         <option value="price-high">Maior preço</option>
-                        <option value="category">Por categoria</option>
                     </select>
                 </div>
             </div>
@@ -102,31 +83,10 @@
 
     <script src="../script.js"></script>
     <script>
-        // Carregamento de todos os produtos
+        // Carregamento específico para Meias
         window.onload = function() {
-            loadAllProducts();
-            setupCategoryFilters();
+            loadCategoryProducts('meias');
         };
-        
-        function setupCategoryFilters() {
-            const filterButtons = document.querySelectorAll('.filter-btn');
-            
-            filterButtons.forEach(button => {
-                button.addEventListener('click', () => {
-                    // Remove active class from all buttons
-                    filterButtons.forEach(btn => btn.classList.remove('active'));
-                    // Add active class to clicked button
-                    button.classList.add('active');
-                    
-                    const category = button.getAttribute('data-category');
-                    if (category === 'all') {
-                        loadAllProducts();
-                    } else {
-                        loadCategoryProducts(category);
-                    }
-                });
-            });
-        }
     </script>
 </body>
 </html>

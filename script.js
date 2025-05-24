@@ -38,247 +38,171 @@ function showSlides() {
     setTimeout(showSlides, 4000);
 }
 
-// Produtos organizados por categoria (com categoria no nome do arquivo)
+// Produtos masculinos organizados por categoria
 const produtosPorCategoria = {
-    'make-pele': [
-        'MakePele-Base-Liquida-Matte-39.90.jpg',
-        'MakePele-Base-Premium-HD-49.90.jpg',
-        'MakePele-Corretivo-Liquido-24.90.jpg',
-        'MakePele-Primer-Facial-29.90.jpg',
-        'MakePele-Po-Compacto-34.90.jpg',
-        'MakePele-Blush-Natural-19.90.jpg',
-        'MakePele-Bronzer-Matte-32.90.jpg',
-        'MakePele-Iluminador-Gold-28.90.jpg',
-        'MakePele-Fixador-Maquiagem-25.90.jpg',
-        'MakePele-Concealer-HD-35.90.jpg',
-        'MakePele-Base-Stick-42.90.jpg',
-        'MakePele-Primer-Poros-31.90.jpg'
+    'shorts': [
+        'Shorts-Moletom-Cinza-49.90.jpg',
+        'Shorts-Jeans-Delavado-59.90.jpg',
+        'Shorts-Tactel-Preto-39.90.jpg',
+        'Shorts-Esportivo-Academia-44.90.jpg',
+        'Shorts-Sarja-Bege-54.90.jpg',
+        'Shorts-Cargo-Verde-64.90.jpg',
+        'Shorts-Praia-Estampado-42.90.jpg',
+        'Shorts-Social-Marinho-69.90.jpg',
+        'Shorts-Ciclista-Compressao-47.90.jpg',
+        'Shorts-Bermuda-Alfaiataria-79.90.jpg',
+        'Shorts-Fitness-DryFit-52.90.jpg',
+        'Shorts-Casual-Listrado-45.90.jpg'
     ],
-    'olhos': [
-        'Olhos-Paleta-de-Sombras-49.90.jpg',
-        'Olhos-Mascara-de-Cilios-29.90.jpg',
-        'Olhos-Delineador-Liquido-19.90.jpg',
-        'Olhos-Lapis-de-Olho-14.90.jpg',
-        'Olhos-Rimel-Volume-35.90.jpg',
-        'Olhos-Sombra-Cremosa-22.90.jpg',
-        'Olhos-Primer-para-Olhos-27.90.jpg',
-        'Olhos-Delineador-Gel-24.90.jpg',
-        'Olhos-Curvex-de-Cilios-18.90.jpg',
-        'Olhos-Sombra-Glitter-33.90.jpg',
-        'Olhos-Lapis-Branco-16.90.jpg',
-        'Olhos-Removedor-Makeup-21.90.jpg',
-        'Olhos-Pincel-Esfumado-39.90.jpg',
-        'Olhos-Cilios-Posticos-45.90.jpg'
+    'camisas': [
+        'Camisas-Social-Branca-89.90.jpg',
+        'Camisas-Polo-Azul-69.90.jpg',
+        'Camisas-Flanela-Xadrez-95.90.jpg',
+        'Camisas-Linho-Bege-79.90.jpg',
+        'Camisas-Jeans-Delave-85.90.jpg',
+        'Camisas-Manga-Longa-Preta-74.90.jpg',
+        'Camisas-Tricoline-Listrada-67.90.jpg',
+        'Camisas-Oxford-Cinza-92.90.jpg',
+        'Camisas-Casual-Estampada-58.90.jpg',
+        'Camisas-Slim-Fit-Marinho-87.90.jpg',
+        'Camisas-Linho-Branca-82.90.jpg',
+        'Camisas-Polo-Listrada-64.90.jpg',
+        'Camisas-Social-Slim-99.90.jpg',
+        'Camisas-Flanela-Verde-78.90.jpg'
     ],
-    'labios': [
-        'Labios-Batom-Matte-19.90.jpg',
-        'Labios-Gloss-Labial-16.90.jpg',
-        'Labios-Batom-Cremoso-21.90.jpg',
-        'Labios-Lapis-Labial-12.90.jpg',
-        'Labios-Batom-Liquido-24.90.jpg',
-        'Labios-Balsamo-Labial-15.90.jpg',
-        'Labios-Batom-Hidratante-18.90.jpg',
-        'Labios-Gloss-Volumador-23.90.jpg',
-        'Labios-Batom-Metalico-26.90.jpg',
-        'Labios-Esfoliante-Labial-14.90.jpg',
-        'Labios-Primer-Labial-17.90.jpg',
-        'Labios-Tinta-Labial-22.90.jpg'
+    'calcas': [
+        'Calcas-Jeans-Skinny-119.90.jpg',
+        'Calcas-Social-Preta-149.90.jpg',
+        'Calcas-Chino-Bege-89.90.jpg',
+        'Calcas-Cargo-Verde-109.90.jpg',
+        'Calcas-Moletom-Cinza-79.90.jpg',
+        'Calcas-Alfaiataria-Marinho-169.90.jpg',
+        'Calcas-Sarja-Caramelo-94.90.jpg',
+        'Calcas-Jeans-Destroyed-124.90.jpg',
+        'Calcas-Social-Risca-Giz-159.90.jpg',
+        'Calcas-Tactel-Esportiva-67.90.jpg',
+        'Calcas-Jogger-Preta-84.90.jpg',
+        'Calcas-Linho-Branca-99.90.jpg',
+        'Calcas-Jeans-Reta-104.90.jpg',
+        'Calcas-Social-Cinza-139.90.jpg',
+        'Calcas-Cargo-Preta-114.90.jpg'
     ],
-    'skincare': [
-        'Skincare-Kit-Completo-59.90.jpg',
-        'Skincare-Serum-Vitamina-C-45.90.jpg',
-        'Skincare-Hidratante-Facial-32.90.jpg',
-        'Skincare-Protetor-Solar-38.90.jpg',
-        'Skincare-Tonico-Facial-26.90.jpg',
-        'Skincare-Esfoliante-Facial-29.90.jpg',
-        'Skincare-Mascara-Facial-35.90.jpg',
-        'Skincare-Serum-Acido-Hialuronico-52.90.jpg',
-        'Skincare-Agua-Micelar-28.90.jpg',
-        'Skincare-Creme-Anti-Idade-67.90.jpg',
-        'Skincare-Serum-Niacinamida-41.90.jpg',
-        'Skincare-Oleo-Facial-44.90.jpg',
-        'Skincare-Gel-de-Limpeza-24.90.jpg',
-        'Skincare-Protetor-Solar-FPS60-45.90.jpg',
-        'Skincare-Mascara-de-Argila-33.90.jpg'
+    'dry-fits': [
+        'DryFits-Basica-Preta-34.90.jpg',
+        'DryFits-Gola-V-Branca-32.90.jpg',
+        'DryFits-Manga-Longa-Azul-42.90.jpg',
+        'DryFits-Estampada-Academia-39.90.jpg',
+        'DryFits-Compressao-Cinza-47.90.jpg',
+        'DryFits-UV-Protection-Branca-49.90.jpg',
+        'DryFits-Fitness-Verde-37.90.jpg',
+        'DryFits-Running-Amarela-44.90.jpg',
+        'DryFits-Slim-Fit-Preta-41.90.jpg',
+        'DryFits-Oversized-Cinza-38.90.jpg',
+        'DryFits-Gola-Careca-Azul-35.90.jpg',
+        'DryFits-Treino-Vermelha-43.90.jpg'
     ],
-    'cabelo': [
-        'Cabelo-Shampoo-Hidratante-24.90.jpg',
-        'Cabelo-Condicionador-Nutritivo-26.90.jpg',
-        'Cabelo-Mascara-Capilar-35.90.jpg',
-        'Cabelo-Oleo-Capilar-29.90.jpg',
-        'Cabelo-Leave-in-Protetor-19.90.jpg',
-        'Cabelo-Finalizador-Capilar-22.90.jpg',
-        'Cabelo-Shampoo-Seco-31.90.jpg',
-        'Cabelo-Serum-Anti-Frizz-37.90.jpg',
-        'Cabelo-Ampola-Reconstrucao-42.90.jpg',
-        'Cabelo-Spray-Termoativo-28.90.jpg',
-        'Cabelo-Tonico-Crescimento-46.90.jpg',
-        'Cabelo-Cronograma-Capilar-65.90.jpg'
+    'meias': [
+        'Meias-Social-Preta-Pack3-24.90.jpg',
+        'Meias-Esportiva-Branca-Pack5-32.90.jpg',
+        'Meias-Cano-Alto-Cinza-Pack3-28.90.jpg',
+        'Meias-Invisivel-Bege-Pack6-19.90.jpg',
+        'Meias-Compressao-Azul-Pack2-45.90.jpg',
+        'Meias-Tenis-Branca-Pack4-26.90.jpg',
+        'Meias-Social-Marinho-Pack3-22.90.jpg',
+        'Meias-Running-Cinza-Pack3-35.90.jpg',
+        'Meias-Casual-Listrada-Pack4-29.90.jpg',
+        'Meias-Algodao-Preta-Pack5-18.90.jpg',
+        'Meias-Trekking-Verde-Pack2-42.90.jpg',
+        'Meias-Social-Risca-Pack3-27.90.jpg'
     ],
     'acessorios': [
-        'Acessorios-Kit-Pinceis-Maquiagem-45.90.jpg',
-        'Acessorios-Esponja-Maquiagem-12.90.jpg',
-        'Acessorios-Necessaire-Beleza-29.90.jpg',
-        'Acessorios-Espelho-Compacto-19.90.jpg',
-        'Acessorios-Curvex-Cilios-15.90.jpg',
-        'Acessorios-Borrifador-Facial-9.90.jpg',
-        'Acessorios-Pincel-Base-38.90.jpg',
-        'Acessorios-Esponja-Limpeza-8.90.jpg',
-        'Acessorios-Organizador-Makeup-55.90.jpg',
-        'Acessorios-Espelho-com-LED-85.90.jpg',
-        'Acessorios-Kit-Lixas-Unhas-16.90.jpg',
-        'Acessorios-Paleta-Mistura-22.90.jpg',
-        'Acessorios-Headband-Spa-14.90.jpg',
-        'Acessorios-Toalha-Microfibra-25.90.jpg'
-    ],
-    'perfumaria': [
-        'Perfumaria-Perfume-Floral-89.90.jpg',
-        'Perfumaria-Body-Spray-Fresh-24.90.jpg',
-        'Perfumaria-Desodorante-Roll-on-16.90.jpg',
-        'Perfumaria-Colonia-Feminina-49.90.jpg',
-        'Perfumaria-Perfume-Masculino-79.90.jpg',
-        'Perfumaria-Agua-de-Colonia-34.90.jpg',
-        'Perfumaria-Perfume-Citrico-76.90.jpg',
-        'Perfumaria-Body-Splash-Tropical-21.90.jpg',
-        'Perfumaria-Desodorante-Aerosol-19.90.jpg',
-        'Perfumaria-Perfume-Amadeirado-94.90.jpg',
-        'Perfumaria-Colonia-Unissex-58.90.jpg',
-        'Perfumaria-Perfume-Doce-67.90.jpg'
-    ],
-    'higiene': [
-        'Higiene-Sabonete-Liquido-14.90.jpg',
-        'Higiene-Lencos-Umedecidos-8.90.jpg',
-        'Higiene-Antisseptico-Gel-12.90.jpg',
-        'Higiene-Sabonete-Antibacteriano-9.90.jpg',
-        'Higiene-Alcool-Gel-6.90.jpg',
-        'Higiene-Toalhas-Umedecidas-11.90.jpg',
-        'Higiene-Sabonete-Intimo-18.90.jpg',
-        'Higiene-Desinfetante-Maos-7.90.jpg',
-        'Higiene-Papel-Higienico-Premium-15.90.jpg',
-        'Higiene-Absorvente-Noturno-13.90.jpg',
-        'Higiene-Protetor-Diario-9.90.jpg',
-        'Higiene-Escova-Dental-Eletrica-89.90.jpg'
-    ],
-    'box-fechado': [
-        'BoxFechado-Box-Surpresa-Maquiagem-79.90.jpg',
-        'BoxFechado-Kit-Iniciante-Skincare-99.90.jpg',
-        'BoxFechado-Box-Mensal-Beleza-149.90.jpg',
-        'BoxFechado-Kit-Completo-Cabelo-119.90.jpg',
-        'BoxFechado-Box-Premium-Cosmeticos-199.90.jpg',
-        'BoxFechado-Kit-Essencial-Higiene-59.90.jpg',
-        'BoxFechado-Box-Especial-Natal-189.90.jpg',
-        'BoxFechado-Kit-Viagem-Beleza-67.90.jpg',
-        'BoxFechado-Box-Dia-das-Maes-129.90.jpg',
-        'BoxFechado-Kit-Presente-Namorada-159.90.jpg'
+        'Acessorios-Cinto-Couro-Preto-45.90.jpg',
+        'Acessorios-Carteira-Couro-Marrom-35.90.jpg',
+        'Acessorios-Relogio-Digital-Preto-89.90.jpg',
+        'Acessorios-Bone-Snapback-Azul-29.90.jpg',
+        'Acessorios-Oculos-Sol-Aviador-65.90.jpg',
+        'Acessorios-Cinto-Lona-Verde-25.90.jpg',
+        'Acessorios-Carteira-Slim-Preta-28.90.jpg',
+        'Acessorios-Relogio-Social-Dourado-129.90.jpg',
+        'Acessorios-Bone-Trucker-Branco-32.90.jpg',
+        'Acessorios-Mochila-Executiva-149.90.jpg',
+        'Acessorios-Gravata-Social-Azul-39.90.jpg',
+        'Acessorios-Suspensorio-Couro-79.90.jpg'
     ]
 };
 
-// Produtos até R$ 6,00 organizados por categoria (com categoria no nome)
+// Produtos masculinos até R$ 6,00 organizados por categoria
 const produtosAte6Reais = {
-    'make-pele': [
-        'MakePele-Esponja-Triangular-3.90.jpg',
-        'MakePele-Algodao-Quadrado-4.50.jpg',
-        'MakePele-Cotonete-Duplo-5.90.jpg',
-        'MakePele-Lenco-Demaquilante-5.50.jpg',
-        'MakePele-Esponja-Redonda-2.90.jpg',
-        'MakePele-Hastes-Flexiveis-4.90.jpg'
+    'shorts': [
+        'Shorts-Cueca-Boxer-Preta-5.90.jpg',
+        'Shorts-Sunga-Basica-Azul-4.50.jpg',
+        'Shorts-Mini-Elastico-Cinza-5.50.jpg'
     ],
-    'olhos': [
-        'Olhos-Removedor-Maquiagem-5.90.jpg',
-        'Olhos-Lencos-Demaquilantes-4.90.jpg',
-        'Olhos-Cotonete-Precision-5.50.jpg',
-        'Olhos-Lapis-Branco-Basic-6.00.jpg',
-        'Olhos-Aplicador-Sombra-3.50.jpg'
+    'camisas': [
+        'Camisas-Regata-Basica-Branca-3.90.jpg',
+        'Camisas-Regata-Algodao-Preta-4.90.jpg',
+        'Camisas-Tank-Top-Cinza-5.50.jpg'
     ],
-    'labios': [
-        'Labios-Protetor-Labial-Basic-5.50.jpg',
-        'Labios-Esfoliante-Labial-6.00.jpg',
-        'Labios-Balsamo-Natural-4.90.jpg',
-        'Labios-Hidratante-Simples-3.90.jpg'
+    'calcas': [
+        'Calcas-Cueca-Long-Preta-6.00.jpg',
+        'Calcas-Bermuda-Casa-Cinza-5.90.jpg'
     ],
-    'skincare': [
-        'Skincare-Algodao-Facial-3.50.jpg',
-        'Skincare-Lencos-Limpeza-5.90.jpg',
-        'Skincare-Sabonete-Facial-6.00.jpg',
-        'Skincare-Tonico-Basic-5.50.jpg',
-        'Skincare-Mascara-Simples-4.90.jpg'
+    'dry-fits': [
+        'DryFits-Regata-Basica-3.50.jpg',
+        'DryFits-Camiseta-Lisa-5.90.jpg',
+        'DryFits-Baby-Look-Masculina-4.50.jpg'
     ],
-    'cabelo': [
-        'Cabelo-Elastico-Cabelo-2.90.jpg',
-        'Cabelo-Grampos-Cabelo-4.50.jpg',
-        'Cabelo-Presilha-Simples-3.50.jpg',
-        'Cabelo-Rabo-Cabelo-5.90.jpg'
+    'meias': [
+        'Meias-Sapatilha-Branca-2.90.jpg',
+        'Meias-Curta-Preta-3.90.jpg',
+        'Meias-Invisivel-Simples-1.90.jpg',
+        'Meias-Tenis-Basica-4.50.jpg',
+        'Meias-Social-Unitaria-5.90.jpg'
     ],
     'acessorios': [
-        'Acessorios-Lima-Unhas-3.90.jpg',
-        'Acessorios-Cortador-Unhas-5.90.jpg',
-        'Acessorios-Lixa-Dupla-Face-2.50.jpg',
-        'Acessorios-Palito-Cuticula-1.90.jpg',
-        'Acessorios-Esponja-Mini-4.50.jpg'
-    ],
-    'perfumaria': [
-        'Perfumaria-Sache-Perfumado-1.90.jpg',
-        'Perfumaria-Borrifador-Mini-5.50.jpg',
-        'Perfumaria-Amostra-Perfume-2.90.jpg'
-    ],
-    'higiene': [
-        'Higiene-Alcool-Gel-50ml-3.90.jpg',
-        'Higiene-Lenco-Umedecido-Mini-2.90.jpg',
-        'Higiene-Sabonete-Mini-4.50.jpg',
-        'Higiene-Lenco-Antibacteriano-5.90.jpg',
-        'Higiene-Protetor-Diario-Mini-6.00.jpg'
+        'Acessorios-Cinto-Basico-Preto-5.90.jpg',
+        'Acessorios-Carteira-Simples-6.00.jpg',
+        'Acessorios-Bone-Basic-4.90.jpg',
+        'Acessorios-Lenco-Pescoço-3.50.jpg'
     ]
 };
 
 const promocoesPorCategoria = {
-    'make-pele': [
-        'MakePele-Base-Premium-89.90-45.90.jpg',
-        'MakePele-Kit-Base-Corretivo-119.90-69.90.jpg',
-        'MakePele-Paleta-Contorno-149.90-89.90.jpg',
-        'MakePele-Kit-Iniciante-199.90-119.90.jpg'
+    'shorts': [
+        'Shorts-Premium-Jeans-89.90-49.90.jpg',
+        'Shorts-Kit-Verao-Pack3-149.90-89.90.jpg',
+        'Shorts-Cargo-Militar-119.90-69.90.jpg',
+        'Shorts-Kit-Academia-Pack2-99.90-59.90.jpg'
     ],
-    'olhos': [
-        'Olhos-Kit-Sombras-Professional-149.90-89.90.jpg',
-        'Olhos-Paleta-Completa-Olhos-79.90-49.90.jpg',
-        'Olhos-Kit-Delineadores-89.90-54.90.jpg',
-        'Olhos-Set-Pinceis-Olhos-129.90-79.90.jpg'
+    'camisas': [
+        'Camisas-Kit-Social-Pack2-179.90-109.90.jpg',
+        'Camisas-Polo-Premium-149.90-89.90.jpg',
+        'Camisas-Kit-Casual-Pack3-199.90-119.90.jpg',
+        'Camisas-Social-Alfaiataria-169.90-99.90.jpg'
     ],
-    'labios': [
-        'Labios-Kit-Batons-Coloridos-89.90-49.90.jpg',
-        'Labios-Set-Gloss-Premium-69.90-39.90.jpg',
-        'Labios-Kit-Nude-Collection-99.90-59.90.jpg'
+    'calcas': [
+        'Calcas-Jeans-Premium-199.90-119.90.jpg',
+        'Calcas-Kit-Social-Pack2-299.90-179.90.jpg',
+        'Calcas-Alfaiataria-Luxo-249.90-149.90.jpg',
+        'Calcas-Kit-Casual-Pack2-219.90-129.90.jpg'
     ],
-    'skincare': [
-        'Skincare-Serum-Facial-79.90-39.90.jpg',
-        'Skincare-Kit-Completo-Tratamento-199.90-99.90.jpg',
-        'Skincare-Rotina-Anti-Idade-249.90-149.90.jpg',
-        'Skincare-Kit-Limpeza-Profunda-159.90-89.90.jpg'
+    'dry-fits': [
+        'DryFits-Kit-Academia-Pack5-149.90-89.90.jpg',
+        'DryFits-Professional-Pack3-119.90-69.90.jpg',
+        'DryFits-Premium-Compressao-89.90-54.90.jpg',
+        'DryFits-Kit-Running-Pack4-139.90-84.90.jpg'
     ],
-    'cabelo': [
-        'Cabelo-Kit-Tratamento-Capilar-149.90-89.90.jpg',
-        'Cabelo-Set-Reconstrucao-199.90-119.90.jpg',
-        'Cabelo-Kit-Cronograma-Completo-299.90-179.90.jpg'
+    'meias': [
+        'Meias-Kit-Semana-Pack7-69.90-39.90.jpg',
+        'Meias-Premium-Pack10-89.90-49.90.jpg',
+        'Meias-Kit-Esportivo-Pack6-79.90-44.90.jpg',
+        'Meias-Social-Premium-Pack5-59.90-34.90.jpg'
     ],
     'acessorios': [
-        'Acessorios-Kit-Pinceis-Premium-199.90-119.90.jpg',
-        'Acessorios-Set-Profissional-299.90-189.90.jpg',
-        'Acessorios-Kit-Organizacao-149.90-89.90.jpg'
-    ],
-    'perfumaria': [
-        'Perfumaria-Perfume-Importado-149.90-89.90.jpg',
-        'Perfumaria-Kit-Familia-Perfumes-199.90-129.90.jpg',
-        'Perfumaria-Set-Body-Sprays-89.90-54.90.jpg'
-    ],
-    'higiene': [
-        'Higiene-Kit-Higiene-Familiar-79.90-49.90.jpg',
-        'Higiene-Set-Cuidados-Intimos-69.90-39.90.jpg',
-        'Higiene-Kit-Viagem-Higiene-59.90-34.90.jpg'
-    ],
-    'box-fechado': [
-        'BoxFechado-Box-Especial-Natal-299.90-199.90.jpg',
-        'BoxFechado-Kit-Surpresa-Premium-199.90-149.90.jpg',
-        'BoxFechado-Box-Aniversario-249.90-179.90.jpg',
-        'BoxFechado-Kit-Mega-Promocao-399.90-249.90.jpg'
+        'Acessorios-Kit-Executivo-Pack3-199.90-119.90.jpg',
+        'Acessorios-Relogio-Premium-249.90-149.90.jpg',
+        'Acessorios-Kit-Couro-Luxo-299.90-179.90.jpg',
+        'Acessorios-Mochila-Premium-179.90-109.90.jpg'
     ]
 };
 
@@ -294,6 +218,10 @@ function loadCategoryProducts(category) {
     // Verificar cache primeiro
     if (categoryCache[category]) {
         renderProductsFromCache(categoryCache[category], productsContainer);
+        // Reconfigurar filtros após renderizar do cache
+        setTimeout(() => {
+            setupFiltersAndSort();
+        }, 100);
         return;
     }
     
@@ -330,6 +258,11 @@ function loadCategoryProducts(category) {
         // Adicionar animação de entrada
         animateProductCards();
         
+        // Configurar filtros após carregar produtos
+        setTimeout(() => {
+            setupFiltersAndSort();
+        }, 600);
+        
     }, 500); // Simular tempo de carregamento
 }
 
@@ -363,6 +296,11 @@ function loadAllProducts() {
         
         // Adicionar animação de entrada
         animateProductCards();
+        
+        // Configurar filtros após carregar produtos
+        setTimeout(() => {
+            setupFiltersAndSort();
+        }, 850);
         
     }, 750);
 }
@@ -472,11 +410,8 @@ function createProductCard(filename, isPromotion, category = '') {
     if (!category && extractedCategory) {
         category = extractedCategory.toLowerCase();
         switch(extractedCategory.toLowerCase()) {
-            case 'makepele':
-                category = 'make-pele';
-                break;
-            case 'boxfechado':
-                category = 'box-fechado';
+            case 'dryfits':
+                category = 'dry-fits';
                 break;
             default:
                 category = extractedCategory.toLowerCase();
@@ -486,37 +421,27 @@ function createProductCard(filename, isPromotion, category = '') {
     // Determinar caminho da imagem - usando imagens do Unsplash como placeholder
     let imageUrl;
     switch(category) {
-        case 'make-pele':
-        case 'makepele':
-            imageUrl = 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=400&h=500&fit=crop';
+        case 'shorts':
+            imageUrl = 'https://images.unsplash.com/photo-1591195853828-11db59a44f6b?w=400&h=500&fit=crop';
             break;
-        case 'olhos':
-            imageUrl = 'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=400&h=500&fit=crop';
+        case 'camisas':
+            imageUrl = 'https://images.unsplash.com/photo-1620012253295-c15cc3e65df4?w=400&h=500&fit=crop';
             break;
-        case 'labios':
-            imageUrl = 'https://images.unsplash.com/photo-1586495777744-4413f21062fa?w=400&h=500&fit=crop';
+        case 'calcas':
+            imageUrl = 'https://images.unsplash.com/photo-1542272604-787c3835535d?w=400&h=500&fit=crop';
             break;
-        case 'skincare':
-            imageUrl = 'https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?w=400&h=500&fit=crop';
+        case 'dry-fits':
+        case 'dryfits':
+            imageUrl = 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=400&h=500&fit=crop';
             break;
-        case 'cabelo':
-            imageUrl = 'https://images.unsplash.com/photo-1519699047748-de8e457a634e?w=400&h=500&fit=crop';
+        case 'meias':
+            imageUrl = 'https://images.unsplash.com/photo-1586790170083-2f9ceadc732d?w=400&h=500&fit=crop';
             break;
         case 'acessorios':
-            imageUrl = 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=400&h=500&fit=crop';
-            break;
-        case 'perfumaria':
-            imageUrl = 'https://images.unsplash.com/photo-1541643600914-78b084683601?w=400&h=500&fit=crop';
-            break;
-        case 'higiene':
-            imageUrl = 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=400&h=500&fit=crop';
-            break;
-        case 'box-fechado':
-        case 'boxfechado':
-            imageUrl = 'https://images.unsplash.com/photo-1549298916-b41d501d3772?w=400&h=500&fit=crop';
+            imageUrl = 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=400&h=500&fit=crop';
             break;
         default:
-            imageUrl = 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=400&h=500&fit=crop';
+            imageUrl = 'https://images.unsplash.com/photo-1620012253295-c15cc3e65df4?w=400&h=500&fit=crop';
     }
     
     // Adicionar badge de promoção se aplicável
@@ -536,7 +461,7 @@ function createProductCard(filename, isPromotion, category = '') {
         ${discountPercentage}
         <div class="product-image">
             <img src="${imageUrl}" alt="${productName}" loading="lazy" 
-                 onerror="this.src='https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=400&h=500&fit=crop'" 
+                 onerror="this.src='https://images.unsplash.com/photo-1620012253295-c15cc3e65df4?w=400&h=500&fit=crop'" 
                  onload="this.classList.add('loaded')">
             <div class="product-actions">
                 <div class="action-btn" title="Favoritar" onclick="toggleFavorite(this, '${productName}')">
@@ -589,15 +514,12 @@ function createProductCard(filename, isPromotion, category = '') {
 // Função para obter nome da categoria em português
 function getCategoryName(category) {
     const categoryNames = {
-        'make-pele': 'Make Pele',
-        'olhos': 'Olhos',
-        'labios': 'Lábios',
-        'skincare': 'Skincare',
-        'cabelo': 'Cabelo',
-        'acessorios': 'Acessórios',
-        'perfumaria': 'Perfumaria',
-        'higiene': 'Higiene',
-        'box-fechado': 'Box Fechado'
+        'shorts': 'Shorts',
+        'camisas': 'Camisas',
+        'calcas': 'Calças',
+        'dry-fits': 'Dry Fits',
+        'meias': 'Meias',
+        'acessorios': 'Acessórios'
     };
     return categoryNames[category] || category;
 }
@@ -648,16 +570,16 @@ function loadBudgetProductsByCategory(category) {
 function loadProducts() {
     // Para a página inicial, carregar alguns produtos de cada categoria
     const produtos = [
-        'MakePele-Base-Liquida-Matte-39.90.jpg',
-        'Olhos-Paleta-de-Sombras-49.90.jpg',
-        'Labios-Batom-Matte-19.90.jpg',
-        'Skincare-Kit-Completo-59.90.jpg'
+        'Shorts-Moletom-Cinza-49.90.jpg',
+        'Camisas-Social-Branca-89.90.jpg',
+        'Calcas-Jeans-Skinny-119.90.jpg',
+        'DryFits-Basica-Preta-34.90.jpg'
     ];
     
     const promocoes = [
-        'MakePele-Base-Premium-89.90-45.90.jpg',
-        'Skincare-Kit-Completo-Tratamento-199.90-99.90.jpg',
-        'Skincare-Serum-Facial-79.90-39.90.jpg'
+        'Shorts-Premium-Jeans-89.90-49.90.jpg',
+        'Camisas-Kit-Social-Pack2-179.90-109.90.jpg',
+        'Calcas-Jeans-Premium-199.90-119.90.jpg'
     ];
     
     // Carregar produtos normais
@@ -736,8 +658,8 @@ function loadFavorites() {
 function quickView(filename, productName, price, originalPrice) {
     const modal = document.getElementById('quick-view-modal') || createQuickViewModal();
     const imagePath = filename.includes('promocoes') ? 
-        'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=400&h=500&fit=crop' : 
-        'https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=400&h=500&fit=crop';
+        'https://images.unsplash.com/photo-1620012253295-c15cc3e65df4?w=400&h=500&fit=crop' : 
+        'https://images.unsplash.com/photo-1591195853828-11db59a44f6b?w=400&h=500&fit=crop';
     
     modal.querySelector('.modal-image img').src = imagePath;
     modal.querySelector('.modal-title').textContent = productName;
@@ -777,7 +699,7 @@ function createQuickViewModal() {
                     <h2 class="modal-title" style="margin-bottom: 1rem; color: var(--primary-color);"></h2>
                     <div class="modal-price" style="font-size: 1.5rem; font-weight: bold; margin-bottom: 1rem;"></div>
                     <div class="modal-description" style="margin-bottom: 2rem; color: #666;">
-                        <p>Produto de alta qualidade da GF Store. Disponível para entrega em todo o Brasil.</p>
+                        <p>Produto masculino de alta qualidade. Disponível para entrega em todo o Brasil.</p>
                     </div>
                     <div class="modal-actions">
                         <button class="btn-primary" onclick="encomendar(this.getAttribute('data-product'))" style="background: var(--primary-color); color: white; border: none; padding: 12px 24px; border-radius: 5px; cursor: pointer; margin-right: 10px; font-weight: 600;">
@@ -813,13 +735,13 @@ function shareProduct(productName) {
     if (navigator.share) {
         navigator.share({
             title: `${productName} - GF Store`,
-            text: `Confira este produto incrível da GF Store: ${productName}`,
+            text: `Confira este produto masculino incrível: ${productName}`,
             url: window.location.href
         });
     } else {
         // Fallback para browsers que não suportam Web Share API
         const url = window.location.href;
-        const text = `Confira este produto incrível da GF Store: ${productName} - ${url}`;
+        const text = `Confira este produto masculino incrível: ${productName} - ${url}`;
         
         if (navigator.clipboard) {
             navigator.clipboard.writeText(text).then(() => {
@@ -886,9 +808,19 @@ function setupFiltersAndSort() {
     const filterButtons = document.querySelectorAll('.filter-btn');
     
     if (sortSelect) {
-        sortSelect.addEventListener('change', function() {
-            sortProducts(this.value);
+        // Remove event listeners existentes para evitar duplicação
+        const newSortSelect = sortSelect.cloneNode(true);
+        sortSelect.parentNode.replaceChild(newSortSelect, sortSelect);
+        
+        newSortSelect.addEventListener('change', function(event) {
+            const sortType = event.target.value;
+            console.log('Tipo de ordenação selecionado:', sortType);
+            sortProducts(sortType);
         });
+        
+        console.log('Sort select configurado');
+    } else {
+        console.log('Sort select não encontrado');
     }
     
     filterButtons.forEach(button => {
@@ -905,23 +837,30 @@ function setupFiltersAndSort() {
 
 function sortProducts(sortType) {
     const container = document.getElementById('products-container');
+    if (!container) return;
+    
     const cards = Array.from(container.querySelectorAll('.product-card'));
+    if (cards.length === 0) return;
+    
+    console.log('Ordenando por:', sortType); // Debug
     
     cards.sort((a, b) => {
         switch (sortType) {
             case 'name':
-                const nameA = a.querySelector('h3').textContent.toLowerCase();
-                const nameB = b.querySelector('h3').textContent.toLowerCase();
+                const nameA = a.querySelector('h3')?.textContent?.toLowerCase() || '';
+                const nameB = b.querySelector('h3')?.textContent?.toLowerCase() || '';
                 return nameA.localeCompare(nameB);
                 
             case 'price-low':
                 const priceA = getPriceValue(a);
                 const priceB = getPriceValue(b);
+                console.log(`Comparando preços: ${priceA} vs ${priceB}`); // Debug
                 return priceA - priceB;
                 
             case 'price-high':
                 const priceA2 = getPriceValue(a);
                 const priceB2 = getPriceValue(b);
+                console.log(`Comparando preços (desc): ${priceA2} vs ${priceB2}`); // Debug
                 return priceB2 - priceA2;
                 
             case 'category':
@@ -946,12 +885,28 @@ function sortProducts(sortType) {
     
     // Animar reordenação
     animateProductCards();
+    
+    console.log('Ordenação concluída'); // Debug
 }
 
 function getPriceValue(card) {
-    const priceElement = card.querySelector('.price-discount, .price');
-    const priceText = priceElement.textContent.replace('R$ ', '').replace(',', '.');
-    return parseFloat(priceText) || 0;
+    // Primeiro tenta pegar o preço com desconto, depois o preço normal
+    const priceElement = card.querySelector('.price-discount') || card.querySelector('.price');
+    
+    if (!priceElement) {
+        console.log('Elemento de preço não encontrado'); // Debug
+        return 0;
+    }
+    
+    const priceText = priceElement.textContent || priceElement.innerText || '';
+    console.log('Texto do preço encontrado:', priceText); // Debug
+    
+    // Remove 'R$', espaços e converte vírgula para ponto
+    const numericPrice = priceText.replace('R$', '').replace(/\s/g, '').replace(',', '.');
+    const price = parseFloat(numericPrice) || 0;
+    
+    console.log('Preço convertido:', price); // Debug
+    return price;
 }
 
 function filterProductsByCategory(category) {
@@ -968,28 +923,50 @@ function filterProductsByCategory(category) {
 
 // Sistema de busca
 function setupSearch() {
-    const searchInput = document.getElementById('search-input');
-    if (searchInput) {
-        searchInput.addEventListener('input', function() {
-            searchProducts(this.value);
-        });
+    try {
+        const searchInput = document.getElementById('search-input');
+        if (searchInput) {
+            searchInput.addEventListener('input', function() {
+                try {
+                    searchProducts(this.value);
+                } catch (error) {
+                    console.error('Erro na busca:', error);
+                }
+            });
+            console.log('Sistema de busca configurado');
+        } else {
+            console.log('Campo de busca não encontrado');
+        }
+    } catch (error) {
+        console.error('Erro ao configurar sistema de busca:', error);
     }
 }
 
 function searchProducts(query) {
-    const cards = document.querySelectorAll('.product-card');
-    const lowercaseQuery = query.toLowerCase();
-    
-    cards.forEach(card => {
-        const productName = card.querySelector('h3').textContent.toLowerCase();
-        const category = card.querySelector('.product-category')?.textContent.toLowerCase() || '';
+    try {
+        const cards = document.querySelectorAll('.product-card');
+        const lowercaseQuery = query.toLowerCase();
         
-        if (productName.includes(lowercaseQuery) || category.includes(lowercaseQuery)) {
-            card.style.display = 'block';
-        } else {
-            card.style.display = 'none';
-        }
-    });
+        cards.forEach(card => {
+            try {
+                const productNameElement = card.querySelector('h3');
+                const categoryElement = card.querySelector('.product-category');
+                
+                const productName = productNameElement ? productNameElement.textContent.toLowerCase() : '';
+                const category = categoryElement ? categoryElement.textContent.toLowerCase() : '';
+                
+                if (productName.includes(lowercaseQuery) || category.includes(lowercaseQuery)) {
+                    card.style.display = 'block';
+                } else {
+                    card.style.display = 'none';
+                }
+            } catch (error) {
+                console.error('Erro ao processar card na busca:', error);
+            }
+        });
+    } catch (error) {
+        console.error('Erro na função de busca:', error);
+    }
 }
 
 // Info section carousel for mobile
@@ -1081,7 +1058,7 @@ function setupInfoCarousel() {
     }
 }
 
-// Mobile Menu Setup - CORRIGIDO E MELHORADO
+// Mobile Menu Setup
 function setupMobileMenu() {
     const menuToggle = document.getElementById('menu-toggle');
     const navMenu = document.getElementById('nav-menu');
@@ -1185,7 +1162,7 @@ function setupMobileMenu() {
     console.log('Menu mobile configurado'); // Debug
 }
 
-// Função para encomendar via WhatsApp (expandida)
+// Função para encomendar via WhatsApp
 function encomendar(produto) {
     const hora = new Date().getHours();
     let saudacao = "";
@@ -1210,8 +1187,8 @@ function encomendar(produto) {
     }
     
     const mensagem = quantidade > 1 ? 
-        `${saudacao}, me interessei por ${quantidade} unidades do produto: ${produto}` :
-        `${saudacao}, me interessei pelo produto: ${produto}`;
+        `${saudacao}, me interessei por ${quantidade} unidades do produto masculino: ${produto}` :
+        `${saudacao}, me interessei pelo produto masculino: ${produto}`;
     
     const numeroWhatsapp = "5511952789725";
     
@@ -1238,154 +1215,213 @@ function trackProductOrder(productName) {
 
 // Função principal de inicialização
 function initializeApp() {
-    console.log('Inicializando aplicação...'); // Debug
+    console.log('Inicializando aplicação...');
     
-    // Configurar slideshow apenas se existir
-    if (document.querySelector('.slide')) {
-        showSlides();
+    try {
+        // Configurar slideshow apenas se existir
+        if (document.querySelector('.slide')) {
+            showSlides();
+        }
+        
+        // Configurar carrossel de informações apenas se existir
+        if (document.querySelector('.info-box')) {
+            setupInfoCarousel();
+        }
+        
+        // Configurar menu mobile - SEMPRE
+        setupMobileMenu();
+        
+        // Configurar filtros e ordenação
+        setupFiltersAndSort();
+        
+        // Configurar busca
+        setupSearch();
+        
+        // Carregar produtos (dependendo da página)
+        if (document.getElementById('products-container') || document.getElementById('promotions-container')) {
+            loadProducts();
+        }
+        
+        // Carregar favoritos salvos
+        setTimeout(() => {
+            try {
+                loadFavorites();
+            } catch (error) {
+                console.error('Erro ao carregar favoritos:', error);
+            }
+        }, 500);
+        
+        // Event listeners globais
+        setupGlobalEventListeners();
+        
+        // Lazy loading para imagens
+        setupLazyLoading();
+        
+        console.log('GF Store initialized successfully!');
+        
+    } catch (error) {
+        console.error('Erro durante a inicialização:', error);
     }
-    
-    // Configurar carrossel de informações apenas se existir
-    if (document.querySelector('.info-box')) {
-        setupInfoCarousel();
-    }
-    
-    // Configurar menu mobile - SEMPRE
-    setupMobileMenu();
-    
-    // Configurar filtros e ordenação
-    setupFiltersAndSort();
-    
-    // Configurar busca
-    setupSearch();
-    
-    // Carregar produtos (dependendo da página)
-    if (document.getElementById('products-container') || document.getElementById('promotions-container')) {
-        loadProducts();
-    }
-    
-    // Carregar favoritos salvos
-    setTimeout(loadFavorites, 500);
-    
-    // Event listeners globais
-    setupGlobalEventListeners();
-    
-    // Lazy loading para imagens
-    setupLazyLoading();
-    
-    console.log('GF Store initialized successfully!');
 }
 
 function setupGlobalEventListeners() {
-    // ESC para fechar modal
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape') {
-            closeModal();
-        }
-    });
-    
-    // Smooth scroll para âncoras
-    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-        anchor.addEventListener('click', function(e) {
-            e.preventDefault();
-            const target = document.querySelector(this.getAttribute('href'));
-            if (target) {
-                target.scrollIntoView({
-                    behavior: 'smooth',
-                    block: 'start'
-                });
+    try {
+        // ESC para fechar modal
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeModal();
             }
         });
-    });
-    
-    // Handle window resize
-    window.addEventListener('resize', function() {
-        showInfoBoxes();
         
-        // Reajustar layout se necessário
-        if (window.innerWidth > 768) {
-            const navMenu = document.getElementById('nav-menu');
-            const menuToggle = document.getElementById('menu-toggle');
-            if (navMenu) {
-                navMenu.classList.remove('active');
-            }
-            if (menuToggle) {
-                menuToggle.classList.remove('active');
-            }
-            document.body.style.overflow = '';
-        }
-    });
-    
-    // Handle scroll para header fixo
-    let lastScrollTop = 0;
-    window.addEventListener('scroll', function() {
-        const currentScroll = window.pageYOffset || document.documentElement.scrollTop;
-        const header = document.querySelector('header');
-        
-        if (header) {
-            if (currentScroll > lastScrollTop && currentScroll > 100) {
-                // Scrolling down
-                header.style.transform = 'translateY(-100%)';
-            } else {
-                // Scrolling up
-                header.style.transform = 'translateY(0)';
-            }
-        }
-        
-        lastScrollTop = currentScroll <= 0 ? 0 : currentScroll;
-    });
-    
-    // Mostrar botão de encomendar rápido no hover
-    document.addEventListener('mouseover', function(e) {
-        if (e.target.closest('.product-card')) {
-            const card = e.target.closest('.product-card');
-            const quickBtn = card.querySelector('.quick-order-btn');
-            if (quickBtn) {
-                quickBtn.style.opacity = '1';
-            }
-        }
-    });
-    
-    document.addEventListener('mouseout', function(e) {
-        if (e.target.closest('.product-card')) {
-            const card = e.target.closest('.product-card');
-            const quickBtn = card.querySelector('.quick-order-btn');
-            if (quickBtn) {
-                quickBtn.style.opacity = '0';
-            }
-        }
-    });
-}
-
-function setupLazyLoading() {
-    if ('IntersectionObserver' in window) {
-        const imageObserver = new IntersectionObserver((entries, observer) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    const img = entry.target;
-                    img.src = img.dataset.src || img.src;
-                    img.classList.remove('lazy');
-                    observer.unobserve(img);
+        // Smooth scroll para âncoras
+        const anchorLinks = document.querySelectorAll('a[href^="#"]');
+        anchorLinks.forEach(anchor => {
+            anchor.addEventListener('click', function(e) {
+                e.preventDefault();
+                const targetId = this.getAttribute('href');
+                const target = document.querySelector(targetId);
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
                 }
             });
         });
         
-        document.querySelectorAll('img[loading="lazy"]').forEach(img => {
-            imageObserver.observe(img);
+        // Handle window resize
+        window.addEventListener('resize', function() {
+            try {
+                if (typeof showInfoBoxes === 'function') {
+                    showInfoBoxes();
+                }
+                
+                // Reajustar layout se necessário
+                if (window.innerWidth > 768) {
+                    const navMenu = document.getElementById('nav-menu');
+                    const menuToggle = document.getElementById('menu-toggle');
+                    if (navMenu) {
+                        navMenu.classList.remove('active');
+                    }
+                    if (menuToggle) {
+                        menuToggle.classList.remove('active');
+                    }
+                    document.body.style.overflow = '';
+                }
+            } catch (error) {
+                console.error('Erro no resize:', error);
+            }
         });
+        
+        // Handle scroll para header fixo
+        let lastScrollTop = 0;
+        window.addEventListener('scroll', function() {
+            try {
+                const currentScroll = window.pageYOffset || document.documentElement.scrollTop;
+                const header = document.querySelector('header');
+                
+                if (header) {
+                    if (currentScroll > lastScrollTop && currentScroll > 100) {
+                        // Scrolling down
+                        header.style.transform = 'translateY(-100%)';
+                    } else {
+                        // Scrolling up
+                        header.style.transform = 'translateY(0)';
+                    }
+                }
+                
+                lastScrollTop = currentScroll <= 0 ? 0 : currentScroll;
+            } catch (error) {
+                console.error('Erro no scroll:', error);
+            }
+        });
+        
+        // Mostrar botão de encomendar rápido no hover
+        document.addEventListener('mouseover', function(e) {
+            try {
+                const productCard = e.target.closest('.product-card');
+                if (productCard) {
+                    const quickBtn = productCard.querySelector('.quick-order-btn');
+                    if (quickBtn) {
+                        quickBtn.style.opacity = '1';
+                    }
+                }
+            } catch (error) {
+                console.error('Erro no mouseover:', error);
+            }
+        });
+        
+        document.addEventListener('mouseout', function(e) {
+            try {
+                const productCard = e.target.closest('.product-card');
+                if (productCard) {
+                    const quickBtn = productCard.querySelector('.quick-order-btn');
+                    if (quickBtn) {
+                        quickBtn.style.opacity = '0';
+                    }
+                }
+            } catch (error) {
+                console.error('Erro no mouseout:', error);
+            }
+        });
+        
+        console.log('Event listeners globais configurados');
+        
+    } catch (error) {
+        console.error('Erro ao configurar event listeners globais:', error);
+    }
+}
+
+function setupLazyLoading() {
+    try {
+        if ('IntersectionObserver' in window) {
+            const imageObserver = new IntersectionObserver((entries, observer) => {
+                entries.forEach(entry => {
+                    try {
+                        if (entry.isIntersecting) {
+                            const img = entry.target;
+                            img.src = img.dataset.src || img.src;
+                            img.classList.remove('lazy');
+                            observer.unobserve(img);
+                        }
+                    } catch (error) {
+                        console.error('Erro no lazy loading de imagem:', error);
+                    }
+                });
+            });
+            
+            const lazyImages = document.querySelectorAll('img[loading="lazy"]');
+            lazyImages.forEach(img => {
+                imageObserver.observe(img);
+            });
+            
+            console.log('Lazy loading configurado para', lazyImages.length, 'imagens');
+        } else {
+            console.log('IntersectionObserver não suportado');
+        }
+    } catch (error) {
+        console.error('Erro ao configurar lazy loading:', error);
     }
 }
 
 // Initialize when page loads
 window.addEventListener('DOMContentLoaded', function() {
-    initializeApp();
+    try {
+        initializeApp();
+    } catch (error) {
+        console.error('Erro no DOMContentLoaded:', error);
+    }
 });
 
 // Garantir que o menu mobile funcione após carregamento completo
 window.addEventListener('load', function() {
-    // Re-configurar menu mobile para garantir funcionamento
-    setTimeout(() => {
-        setupMobileMenu();
-        console.log('Menu mobile reconfigurado após load completo');
-    }, 100);
+    try {
+        // Re-configurar menu mobile para garantir funcionamento
+        setTimeout(() => {
+            setupMobileMenu();
+            console.log('Menu mobile reconfigurado após load completo');
+        }, 100);
+    } catch (error) {
+        console.error('Erro no window load:', error);
+    }
 });
