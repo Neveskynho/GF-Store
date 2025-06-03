@@ -1,4 +1,440 @@
-// Slideshow functionality for hero section
+// Função para obter nome da categoria em português
+function getCategoryName(category) {
+    const categoryNames = {
+        'shorts': 'Shorts',
+        'camisas': 'Camisas',
+        'calcas': 'Calças',
+        'dry-fits': 'Dry Fits',
+        'meias': 'Meias',
+        'acessorios': 'Acessórios',
+        'outros': 'Outros'
+    };
+    return categoryNames[category] || category;
+}
+async function checkGoogleDriveConfig() {
+    try {
+        // Verificar se o backend está funcionando
+        const response = await fetch(`${GOOGLE_DRIVE_CONFIG.BACKEND_API_URL.replace('/produtos', '/status')}`);
+        
+        if (response.ok) {
+            const data = await response.json();
+            if (data.success) {
+                console.log(`✅ Backend conectado! Pasta: "${data.folder}"`);
+                return true;
+            }
+        }
+        
+        console.warn('⚠️ Backend não está respondendo corretamente');
+        return false;
+    } catch (error) {
+        console.error('❌ Erro ao conectar com backend:', error);
+        console.log('💡 Certifique-se que o servidor Node.js está rodando');
+        return false;
+    }
+}
+
+// Função principal de inicialização
+async function initializeApp() {
+    console.log('🚀 Inicializando GF Store...');
+    
+    try {
+        // Inicializar Google Auth se estiver no ambiente Node.js
+        if (typeof require !== 'undefined') {
+            initializeGoogleDriveAuth();
+        }
+        
+        // Verificar configuração do backend
+        const backendOk = await checkGoogleDriveConfig();
+        if (!backendOk) {
+            console.warn('⚠️ Backend não configurado. Usando modo de fallback.');
+        }
+        
+        // Configurar slideshow apenas se existir
+        if (document.querySelector('.slide')) {
+            showSlides();
+        }
+        
+        // Configurar carrossel de informações apenas se existir
+        if (document.querySelector('.info-box')) {
+            setupInfoCarousel();
+        }
+        
+        // Configurar menu mobile - SEMPRE
+        setupMobileMenu();
+        
+        // Configurar filtros e ordenação
+        setupFiltersAndSort();
+        
+        // Configurar busca
+        setupSearch();
+        
+        // Carregar produtos (dependendo da página)
+        if (document.getElementById('products-container') || document.getElementById('promotions-container')) {
+            loadProducts();
+        }
+        
+        // Carregar favoritos salvos
+        setTimeout(() => {
+            try {
+                loadFavorites();
+            } catch (error) {
+                console.error('Erro ao carregar favoritos:', error);
+            }
+        }, 500);
+        
+        // Event listeners globais
+        setupGlobalEventListeners();
+        
+        // Lazy loading para imagens
+        setupLazyLoading();
+        
+        console.log('✅ GF Store inicializada com sucesso!');
+        
+    } catch (error) {
+        console.error('❌ Erro durante a inicialização:', error);
+    }
+}
+
+async function createProductCardFromDrive(file, productInfo, category = '') {
+    const card = document.createElement('div');
+    card.className = 'product-card';
+    card.dataset.category = category;
+    card.dataset.promotion = productInfo.isPromotion;
+    
+    // Obter URL da imagem do Google Drive
+    const driveImageUrl = getGoogleDriveImageUrl(file);
+    
+    // Determinar imagem de fallback baseada na categoria
+    let fallbackImageUrl;
+    switch(category) {
+        case 'shorts':
+            fallbackImageUrl = 'https://images.unsplash.com/photo-1591195853828-11db59a44f6b?w=400&h=500&fit=crop';
+            break;
+        case 'camisas':
+            fallbackImageUrl = 'https://images.unsplash.com/photo-1620012253295-c15cc3e65df4?w=400&h=500&fit=crop';
+            break;
+        case 'calcas':
+            fallbackImageUrl = 'https://images.unsplash.com/photo-1542272604-787c3835535d?w=400&h=500&fit=crop';
+            break;
+        case 'dry-fits':
+            fallbackImageUrl = 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=400&h=500&fit=crop';
+            break;
+        case 'meias':
+            fallbackImageUrl = 'https://images.unsplash.com/photo-1586790170083-2f9ceadc732d?w=400&h=500&fit=crop';
+            break;
+        case 'acessorios':
+            fallbackImageUrl = 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=400&h=500&fit=crop';
+            break;
+        default:
+            fallbackImageUrl = 'https://images.unsplash.com/photo-1620012253295-c15cc3e65df4?w=400&h=500&fit=crop';
+    }
+    
+    // Verificar qual URL de imagem usar
+    const finalImageUrl = await createImageWithFallback(driveImageUrl, productInfo.name, fallbackImageUrl);
+    
+    // Adicionar badge de promoção se aplicável
+    const promotionBadge = productInfo.isPromotion ? '<div class="promotion-badge">PROMOÇÃO</div>' : '';
+    
+    // Calcular desconto se for promoção
+    let discountPercentage = '';
+    if (productInfo.isPromotion && productInfo.originalPrice) {
+        const originalValue = parseFloat(productInfo.originalPrice.replace('R$ ', '').replace(',', '.'));
+        const currentValue = parseFloat(productInfo.price.replace('R$ ', '').replace(',', '.'));
+        const discount = Math.round(((originalValue - currentValue) / originalValue) * 100);
+        discountPercentage = `<div class="discount-badge" style="position: absolute; top: 10px; right: 10px; background: #27ae60; color: white; padding: 5px 8px; font-size: 0.7rem; border-radius: 50%; font-weight: bold; min-width: 35px; text-align: center; z-index: 10;">-${discount}%</div>`;
+    }
+    
+    card.innerHTML = `
+        ${promotionBadge}
+        ${discountPercentage}
+        <div class="product-image">
+            <img src="${finalImageUrl}" alt="${productInfo.name}" loading="lazy" 
+                 onerror="this.src='${fallbackImageUrl}'" 
+                 onload="this.classList.add('loaded')"
+                 crossorigin="anonymous">
+            <div class="product-actions">
+                <div class="action-btn" title="Favoritar" onclick="toggleFavorite(this, '${productInfo.name}')">
+                    <i class="far fa-heart"></i>
+                </div>
+                <div class="action-btn" title="Visualização rápida" onclick="quickView('${file.name}', '${productInfo.name}', '${productInfo.price}', '${productInfo.originalPrice || ''}', '${finalImageUrl}')">
+                    <i class="far fa-eye"></i>
+                </div>
+                <div class="action-btn" title="Compartilhar" onclick="shareProduct('${productInfo.name}')">
+                    <i class="fas fa-share-alt"></i>
+                </div>
+            </div>
+            <div class="product-overlay">
+                <button class="quick-order-btn" onclick="encomendar('${productInfo.name}')" style="position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); background: #25d366; color: white; border: none; padding: 8px 15px; border-radius: 20px; font-size: 0.9rem; opacity: 0; transition: opacity 0.3s ease; z-index: 10;">
+                    <i class="fab fa-whatsapp"></i>
+                    Encomendar Rápido
+                </button>
+            </div>
+        </div>
+        <div class="product-info">
+            <h3>${productInfo.name}</h3>
+            ${category ? `<span class="product-category" data-category="${category}">${getCategoryName(category)}</span>` : ''}
+            <div class="product-rating">
+                <div class="stars">
+                    ${'★'.repeat(5)}
+                </div>
+                <span class="rating-count">(${Math.floor(Math.random() * 50) + 10})</span>
+            </div>
+            <div class="price-container">
+                ${productInfo.originalPrice ? `<span class="price-original">${productInfo.originalPrice}</span>` : ''}
+                <span class="${productInfo.originalPrice ? 'price-discount' : 'price'}">${productInfo.price}</span>
+            </div>
+            <div class="product-options">
+                <div class="quantity-selector" style="display: flex; align-items: center; border: 1px solid #ddd; border-radius: 4px; width: fit-content; overflow: hidden; margin: 1rem 0;">
+                    <button onclick="decreaseQuantity(this)" style="background-color: var(--accent-color); border: none; padding: 0.6rem 0.8rem; cursor: pointer; font-size: 1.1rem; font-weight: 600; transition: var(--transition); color: var(--primary-color); min-width: 35px; display: flex; align-items: center; justify-content: center;">-</button>
+                    <input type="number" value="1" min="1" max="10" style="border: none; width: 60px; padding: 0.6rem 0.5rem; text-align: center; font-size: 1rem; font-weight: 500; background-color: white; outline: none; border-left: 1px solid #ddd; border-right: 1px solid #ddd;">
+                    <button onclick="increaseQuantity(this)" style="background-color: var(--accent-color); border: none; padding: 0.6rem 0.8rem; cursor: pointer; font-size: 1.1rem; font-weight: 600; transition: var(--transition); color: var(--primary-color); min-width: 35px; display: flex; align-items: center; justify-content: center;">+</button>
+                </div>
+            </div>
+            <button class="add-to-cart" onclick="encomendar('${productInfo.name}')" data-product="${productInfo.name}">
+                <i class="fab fa-whatsapp"></i>
+                Encomendar agora
+            </button>
+        </div>
+    `;
+    
+    return card;
+}
+
+// Função para carregar produtos até R$ 6,00 (mantida para compatibilidade)
+function loadBudgetProducts() {
+    // Filtrar produtos com preço até 6 reais
+    console.log('Carregando produtos até R$ 6,00...');
+    
+    const productsContainer = document.getElementById('products-container');
+    if (!productsContainer) return;
+    
+    showLoadingState(productsContainer);
+    
+    setTimeout(async () => {
+        try {
+            // Buscar todos os produtos se ainda não foram carregados
+            if (allProductsCache.length === 0) {
+                const files = await fetchAllProducts();
+                allProductsCache = files.filter(file => file.name.match(/\.(jpg|jpeg|png|webp)$/i));
+            }
+            
+            // Filtrar produtos até R$ 6,00
+            const budgetProducts = allProductsCache.filter(file => {
+                const productInfo = parseProductFileName(file.name);
+                const price = parseFloat(productInfo.price.replace('R$ ', '').replace(',', '.'));
+                return price <= 6.00;
+            });
+            
+            productsContainer.innerHTML = '';
+            
+            if (budgetProducts.length === 0) {
+                productsContainer.innerHTML = `
+                    <div style="text-align: center; padding: 3rem; color: #666;">
+                        <h3>Nenhum produto encontrado</h3>
+                        <p>Não há produtos até R$ 6,00 disponíveis no momento.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            budgetProducts.forEach(file => {
+                const category = categorizeProductFromFileName(file.name);
+                const productInfo = parseProductFileName(file.name);
+                const card = createProductCardFromDrive(file, productInfo, category);
+                productsContainer.appendChild(card);
+            });
+            
+            animateProductCards();
+        } catch (error) {
+            console.error('Erro ao carregar produtos até R$ 6,00:', error);
+            productsContainer.innerHTML = `
+                <div style="text-align: center; padding: 3rem; color: #666;">
+                    <h3>Erro ao carregar produtos</h3>
+                    <p>Tente novamente mais tarde.</p>
+                </div>
+            `;
+        }
+    }, 600);
+}
+
+// Função para carregar produtos até R$ 6,00 por categoria (mantida para compatibilidade)
+function loadBudgetProductsByCategory(category) {
+    console.log(`Carregando produtos até R$ 6,00 da categoria ${category}...`);
+    
+    const productsContainer = document.getElementById('products-container');
+    if (!productsContainer) return;
+    
+    showLoadingState(productsContainer);
+    
+    setTimeout(async () => {
+        try {
+            // Buscar todos os produtos se ainda não foram carregados
+            if (allProductsCache.length === 0) {
+                const files = await fetchAllProducts();
+                allProductsCache = files.filter(file => file.name.match(/\.(jpg|jpeg|png|webp)$/i));
+            }
+            
+            // Filtrar produtos da categoria até R$ 6,00
+            const budgetCategoryProducts = allProductsCache.filter(file => {
+                const detectedCategory = categorizeProductFromFileName(file.name);
+                const productInfo = parseProductFileName(file.name);
+                const price = parseFloat(productInfo.price.replace('R$ ', '').replace(',', '.'));
+                return detectedCategory === category && price <= 6.00;
+            });
+            
+            productsContainer.innerHTML = '';
+            
+            if (budgetCategoryProducts.length === 0) {
+                productsContainer.innerHTML = `
+                    <div style="text-align: center; padding: 3rem; color: #666;">
+                        <h3>Nenhum produto encontrado</h3>
+                        <p>Não há produtos de "${getCategoryName(category)}" até R$ 6,00 disponíveis.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            budgetCategoryProducts.forEach(file => {
+                const productInfo = parseProductFileName(file.name);
+                const card = createProductCardFromDrive(file, productInfo, category);
+                productsContainer.appendChild(card);
+            });
+            
+            animateProductCards();
+        } catch (error) {
+            console.error('Erro ao carregar produtos até R$ 6,00 por categoria:', error);
+            productsContainer.innerHTML = `
+                <div style="text-align: center; padding: 3rem; color: #666;">
+                    <h3>Erro ao carregar produtos</h3>
+                    <p>Tente novamente mais tarde.</p>
+                </div>
+            `;
+        }
+    }, 400);
+}
+
+// Função para carregar produtos dinamicamente (versão para home)
+async function loadProducts() {
+    try {
+        // Buscar todos os produtos se ainda não foram carregados
+        if (allProductsCache.length === 0) {
+            const files = await fetchAllProducts();
+            allProductsCache = files.filter(file => file.name.match(/\.(jpg|jpeg|png|webp)$/i));
+        }
+        
+        const productsContainer = document.getElementById('products-container');
+        const promotionsContainer = document.getElementById('promotions-container');
+        
+        if (productsContainer) {
+            // Carregar alguns produtos normais (não promoções) para a seção "Novidades"
+            const regularProducts = allProductsCache.filter(file => {
+                const productInfo = parseProductFileName(file.name);
+                return !productInfo.isPromotion;
+            }).slice(0, 8); // Pegar apenas os primeiros 8 produtos
+            
+            regularProducts.forEach(file => {
+                const category = categorizeProductFromFileName(file.name);
+                const productInfo = parseProductFileName(file.name);
+                const card = createProductCardFromDrive(file, productInfo, category);
+                productsContainer.appendChild(card);
+            });
+        }
+        
+        if (promotionsContainer) {
+            // Carregar produtos em promoção para a seção "Promoções"
+            const promotionProducts = allProductsCache.filter(file => {
+                const productInfo = parseProductFileName(file.name);
+                return productInfo.isPromotion;
+            }).slice(0, 6); // Pegar apenas os primeiros 6 produtos em promoção
+            
+            promotionProducts.forEach(file => {
+                const category = categorizeProductFromFileName(file.name);
+                const productInfo = parseProductFileName(file.name);
+                const card = createProductCardFromDrive(file, productInfo, category);
+                promotionsContainer.appendChild(card);
+            });
+        }
+        
+        // Animar cards após carregamento
+        setTimeout(animateProductCards, 100);
+        
+    } catch (error) {
+        console.error('Erro ao carregar produtos para home:', error);
+        
+        // Fallback: usar produtos estáticos se houver erro
+        const produtos = [
+            { name: 'Shorts Moletom Cinza', price: 'R$ 49,90', category: 'shorts' },
+            { name: 'Camisa Social Branca', price: 'R$ 89,90', category: 'camisas' },
+            { name: 'Calça Jeans Skinny', price: 'R$ 119,90', category: 'calcas' },
+            { name: 'Dry Fit Básica Preta', price: 'R$ 34,90', category: 'dry-fits' }
+        ];
+        
+        const productsContainer = document.getElementById('products-container');
+        if (productsContainer) {
+            produtos.forEach(produto => {
+                const card = createFallbackProductCard(produto);
+                productsContainer.appendChild(card);
+            });
+        }
+    }
+}
+
+// Função auxiliar para criar card de produto fallback
+function createFallbackProductCard(produto) {
+    const card = document.createElement('div');
+    card.className = 'product-card';
+    card.dataset.category = produto.category;
+    
+    // Determinar imagem baseada na categoria
+    let imageUrl;
+    switch(produto.category) {
+        case 'shorts':
+            imageUrl = 'https://images.unsplash.com/photo-1591195853828-11db59a44f6b?w=400&h=500&fit=crop';
+            break;
+        case 'camisas':
+            imageUrl = 'https://images.unsplash.com/photo-1620012253295-c15cc3e65df4?w=400&h=500&fit=crop';
+            break;
+        case 'calcas':
+            imageUrl = 'https://images.unsplash.com/photo-1542272604-787c3835535d?w=400&h=500&fit=crop';
+            break;
+        case 'dry-fits':
+            imageUrl = 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=400&h=500&fit=crop';
+            break;
+        default:
+            imageUrl = 'https://images.unsplash.com/photo-1620012253295-c15cc3e65df4?w=400&h=500&fit=crop';
+    }
+    
+    card.innerHTML = `
+        <div class="product-image">
+            <img src="${imageUrl}" alt="${produto.name}" loading="lazy">
+            <div class="product-actions">
+                <div class="action-btn" title="Favoritar" onclick="toggleFavorite(this, '${produto.name}')">
+                    <i class="far fa-heart"></i>
+                </div>
+                <div class="action-btn" title="Compartilhar" onclick="shareProduct('${produto.name}')">
+                    <i class="fas fa-share-alt"></i>
+                </div>
+            </div>
+        </div>
+        <div class="product-info">
+            <h3>${produto.name}</h3>
+            <span class="product-category" data-category="${produto.category}">${getCategoryName(produto.category)}</span>
+            <div class="product-rating">
+                <div class="stars">${'★'.repeat(5)}</div>
+                <span class="rating-count">(${Math.floor(Math.random() * 50) + 10})</span>
+            </div>
+            <div class="price-container">
+                <span class="price">${produto.price}</span>
+            </div>
+            <button class="add-to-cart" onclick="encomendar('${produto.name}')" data-product="${produto.name}">
+                <i class="fab fa-whatsapp"></i>
+                Encomendar agora
+            </button>
+        </div>
+    `;
+    
+    return card;
+}// Slideshow functionality for hero section
 let slideIndex = 0;
 
 function showSlides() {
@@ -38,187 +474,216 @@ function showSlides() {
     setTimeout(showSlides, 4000);
 }
 
-// Produtos masculinos organizados por categoria
-const produtosPorCategoria = {
-    'shorts': [
-        'Shorts-Moletom-Cinza-49.90.jpg',
-        'Shorts-Jeans-Delavado-59.90.jpg',
-        'Shorts-Tactel-Preto-39.90.jpg',
-        'Shorts-Esportivo-Academia-44.90.jpg',
-        'Shorts-Sarja-Bege-54.90.jpg',
-        'Shorts-Cargo-Verde-64.90.jpg',
-        'Shorts-Praia-Estampado-42.90.jpg',
-        'Shorts-Social-Marinho-69.90.jpg',
-        'Shorts-Ciclista-Compressao-47.90.jpg',
-        'Shorts-Bermuda-Alfaiataria-79.90.jpg',
-        'Shorts-Fitness-DryFit-52.90.jpg',
-        'Shorts-Casual-Listrado-45.90.jpg'
-    ],
-    'camisas': [
-        'Camisas-Social-Branca-89.90.jpg',
-        'Camisas-Polo-Azul-69.90.jpg',
-        'Camisas-Flanela-Xadrez-95.90.jpg',
-        'Camisas-Linho-Bege-79.90.jpg',
-        'Camisas-Jeans-Delave-85.90.jpg',
-        'Camisas-Manga-Longa-Preta-74.90.jpg',
-        'Camisas-Tricoline-Listrada-67.90.jpg',
-        'Camisas-Oxford-Cinza-92.90.jpg',
-        'Camisas-Casual-Estampada-58.90.jpg',
-        'Camisas-Slim-Fit-Marinho-87.90.jpg',
-        'Camisas-Linho-Branca-82.90.jpg',
-        'Camisas-Polo-Listrada-64.90.jpg',
-        'Camisas-Social-Slim-99.90.jpg',
-        'Camisas-Flanela-Verde-78.90.jpg'
-    ],
-    'calcas': [
-        'Calcas-Jeans-Skinny-119.90.jpg',
-        'Calcas-Social-Preta-149.90.jpg',
-        'Calcas-Chino-Bege-89.90.jpg',
-        'Calcas-Cargo-Verde-109.90.jpg',
-        'Calcas-Moletom-Cinza-79.90.jpg',
-        'Calcas-Alfaiataria-Marinho-169.90.jpg',
-        'Calcas-Sarja-Caramelo-94.90.jpg',
-        'Calcas-Jeans-Destroyed-124.90.jpg',
-        'Calcas-Social-Risca-Giz-159.90.jpg',
-        'Calcas-Tactel-Esportiva-67.90.jpg',
-        'Calcas-Jogger-Preta-84.90.jpg',
-        'Calcas-Linho-Branca-99.90.jpg',
-        'Calcas-Jeans-Reta-104.90.jpg',
-        'Calcas-Social-Cinza-139.90.jpg',
-        'Calcas-Cargo-Preta-114.90.jpg'
-    ],
-    'dry-fits': [
-        'DryFits-Basica-Preta-34.90.jpg',
-        'DryFits-Gola-V-Branca-32.90.jpg',
-        'DryFits-Manga-Longa-Azul-42.90.jpg',
-        'DryFits-Estampada-Academia-39.90.jpg',
-        'DryFits-Compressao-Cinza-47.90.jpg',
-        'DryFits-UV-Protection-Branca-49.90.jpg',
-        'DryFits-Fitness-Verde-37.90.jpg',
-        'DryFits-Running-Amarela-44.90.jpg',
-        'DryFits-Slim-Fit-Preta-41.90.jpg',
-        'DryFits-Oversized-Cinza-38.90.jpg',
-        'DryFits-Gola-Careca-Azul-35.90.jpg',
-        'DryFits-Treino-Vermelha-43.90.jpg'
-    ],
-    'meias': [
-        'Meias-Social-Preta-Pack3-24.90.jpg',
-        'Meias-Esportiva-Branca-Pack5-32.90.jpg',
-        'Meias-Cano-Alto-Cinza-Pack3-28.90.jpg',
-        'Meias-Invisivel-Bege-Pack6-19.90.jpg',
-        'Meias-Compressao-Azul-Pack2-45.90.jpg',
-        'Meias-Tenis-Branca-Pack4-26.90.jpg',
-        'Meias-Social-Marinho-Pack3-22.90.jpg',
-        'Meias-Running-Cinza-Pack3-35.90.jpg',
-        'Meias-Casual-Listrada-Pack4-29.90.jpg',
-        'Meias-Algodao-Preta-Pack5-18.90.jpg',
-        'Meias-Trekking-Verde-Pack2-42.90.jpg',
-        'Meias-Social-Risca-Pack3-27.90.jpg'
-    ],
-    'acessorios': [
-        'Acessorios-Cinto-Couro-Preto-45.90.jpg',
-        'Acessorios-Carteira-Couro-Marrom-35.90.jpg',
-        'Acessorios-Relogio-Digital-Preto-89.90.jpg',
-        'Acessorios-Bone-Snapback-Azul-29.90.jpg',
-        'Acessorios-Oculos-Sol-Aviador-65.90.jpg',
-        'Acessorios-Cinto-Lona-Verde-25.90.jpg',
-        'Acessorios-Carteira-Slim-Preta-28.90.jpg',
-        'Acessorios-Relogio-Social-Dourado-129.90.jpg',
-        'Acessorios-Bone-Trucker-Branco-32.90.jpg',
-        'Acessorios-Mochila-Executiva-149.90.jpg',
-        'Acessorios-Gravata-Social-Azul-39.90.jpg',
-        'Acessorios-Suspensorio-Couro-79.90.jpg'
-    ]
-};
-
-// Produtos masculinos até R$ 6,00 organizados por categoria
-const produtosAte6Reais = {
-    'shorts': [
-        'Shorts-Cueca-Boxer-Preta-5.90.jpg',
-        'Shorts-Sunga-Basica-Azul-4.50.jpg',
-        'Shorts-Mini-Elastico-Cinza-5.50.jpg'
-    ],
-    'camisas': [
-        'Camisas-Regata-Basica-Branca-3.90.jpg',
-        'Camisas-Regata-Algodao-Preta-4.90.jpg',
-        'Camisas-Tank-Top-Cinza-5.50.jpg'
-    ],
-    'calcas': [
-        'Calcas-Cueca-Long-Preta-6.00.jpg',
-        'Calcas-Bermuda-Casa-Cinza-5.90.jpg'
-    ],
-    'dry-fits': [
-        'DryFits-Regata-Basica-3.50.jpg',
-        'DryFits-Camiseta-Lisa-5.90.jpg',
-        'DryFits-Baby-Look-Masculina-4.50.jpg'
-    ],
-    'meias': [
-        'Meias-Sapatilha-Branca-2.90.jpg',
-        'Meias-Curta-Preta-3.90.jpg',
-        'Meias-Invisivel-Simples-1.90.jpg',
-        'Meias-Tenis-Basica-4.50.jpg',
-        'Meias-Social-Unitaria-5.90.jpg'
-    ],
-    'acessorios': [
-        'Acessorios-Cinto-Basico-Preto-5.90.jpg',
-        'Acessorios-Carteira-Simples-6.00.jpg',
-        'Acessorios-Bone-Basic-4.90.jpg',
-        'Acessorios-Lenco-Pescoço-3.50.jpg'
-    ]
-};
-
-const promocoesPorCategoria = {
-    'shorts': [
-        'Shorts-Premium-Jeans-89.90-49.90.jpg',
-        'Shorts-Kit-Verao-Pack3-149.90-89.90.jpg',
-        'Shorts-Cargo-Militar-119.90-69.90.jpg',
-        'Shorts-Kit-Academia-Pack2-99.90-59.90.jpg'
-    ],
-    'camisas': [
-        'Camisas-Kit-Social-Pack2-179.90-109.90.jpg',
-        'Camisas-Polo-Premium-149.90-89.90.jpg',
-        'Camisas-Kit-Casual-Pack3-199.90-119.90.jpg',
-        'Camisas-Social-Alfaiataria-169.90-99.90.jpg'
-    ],
-    'calcas': [
-        'Calcas-Jeans-Premium-199.90-119.90.jpg',
-        'Calcas-Kit-Social-Pack2-299.90-179.90.jpg',
-        'Calcas-Alfaiataria-Luxo-249.90-149.90.jpg',
-        'Calcas-Kit-Casual-Pack2-219.90-129.90.jpg'
-    ],
-    'dry-fits': [
-        'DryFits-Kit-Academia-Pack5-149.90-89.90.jpg',
-        'DryFits-Professional-Pack3-119.90-69.90.jpg',
-        'DryFits-Premium-Compressao-89.90-54.90.jpg',
-        'DryFits-Kit-Running-Pack4-139.90-84.90.jpg'
-    ],
-    'meias': [
-        'Meias-Kit-Semana-Pack7-69.90-39.90.jpg',
-        'Meias-Premium-Pack10-89.90-49.90.jpg',
-        'Meias-Kit-Esportivo-Pack6-79.90-44.90.jpg',
-        'Meias-Social-Premium-Pack5-59.90-34.90.jpg'
-    ],
-    'acessorios': [
-        'Acessorios-Kit-Executivo-Pack3-199.90-119.90.jpg',
-        'Acessorios-Relogio-Premium-249.90-149.90.jpg',
-        'Acessorios-Kit-Couro-Luxo-299.90-179.90.jpg',
-        'Acessorios-Mochila-Premium-179.90-109.90.jpg'
-    ]
+// Configuração do Google Drive (Frontend apenas)
+const GOOGLE_DRIVE_CONFIG = {
+    // ID da pasta "GF Store/Produtos" no Google Drive
+    PRODUTOS_FOLDER_ID: '1BWvBU037bgDLEEluzrHI32DQnMSMWtSq',
+    
+    // API Key do Google Drive (crie uma no Google Cloud Console)
+    API_KEY: 'AIzaSyADp8urxhRNRIud_GZuqNugf2KQZj2GGNc',
+    
+    // URLs base da API
+    API_BASE_URL: 'https://www.googleapis.com/drive/v3'
 };
 
 // Cache para produtos carregados
 let productCache = {};
 let categoryCache = {};
+let allProductsCache = [];
 
-// Função para carregar produtos de uma categoria específica
-function loadCategoryProducts(category) {
+// Função para buscar todos os produtos da pasta "GF Store/Produtos"
+async function fetchAllProducts() {
+    try {
+        const url = `${GOOGLE_DRIVE_CONFIG.API_BASE_URL}/files?q='${GOOGLE_DRIVE_CONFIG.PRODUTOS_FOLDER_ID}'+in+parents&key=${GOOGLE_DRIVE_CONFIG.API_KEY}&fields=files(id,name,webViewLink,webContentLink,thumbnailLink,mimeType)`;
+        
+        const response = await fetch(url);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        
+        // Filtrar apenas arquivos de imagem
+        const imageFiles = (data.files || []).filter(file => 
+            file.name && file.name.match(/\.(jpg|jpeg|png|webp)$/i)
+        );
+        
+        console.log(`📁 Encontrados ${imageFiles.length} produtos`);
+        return imageFiles;
+    } catch (error) {
+        console.error('Erro ao buscar produtos do Google Drive:', error);
+        return [];
+    }
+}
+
+// Função para obter URL de visualização da imagem do Google Drive
+function getGoogleDriveImageUrl(file) {
+    // Método 1: URL direta de visualização (mais confiável)
+    if (file.id) {
+        return `https://drive.google.com/uc?id=${file.id}&export=view`;
+    }
+    
+    // Método 2: Thumbnail em alta resolução (backup)
+    if (file.thumbnailLink) {
+        return file.thumbnailLink.replace('=s220', '=s800');
+    }
+    
+    // Método 3: Fallback para imagem padrão
+    return 'https://images.unsplash.com/photo-1620012253295-c15cc3e65df4?w=400&h=500&fit=crop';
+}
+
+// Função para verificar se a imagem do Google Drive carrega corretamente
+function createImageWithFallback(imageUrl, alt, fallbackUrl) {
+    return new Promise((resolve) => {
+        const img = new Image();
+        
+        img.onload = function() {
+            // Imagem carregou com sucesso
+            resolve(imageUrl);
+        };
+        
+        img.onerror = function() {
+            // Erro ao carregar, usar fallback
+            console.warn(`Erro ao carregar imagem: ${imageUrl}`);
+            resolve(fallbackUrl || 'https://images.unsplash.com/photo-1620012253295-c15cc3e65df4?w=400&h=500&fit=crop');
+        };
+        
+        img.src = imageUrl;
+    });
+}
+
+// Função para processar e categorizar produtos baseado no nome do arquivo
+function categorizeProductFromFileName(fileName) {
+    const lowerName = fileName.toLowerCase();
+    
+    // Detectar categoria baseada no início do nome do arquivo
+    if (lowerName.startsWith('shorts-')) return 'shorts';
+    if (lowerName.startsWith('camisas-')) return 'camisas';
+    if (lowerName.startsWith('calcas-')) return 'calcas';
+    if (lowerName.startsWith('dryfits-') || lowerName.startsWith('dry-fits-')) return 'dry-fits';
+    if (lowerName.startsWith('meias-')) return 'meias';
+    if (lowerName.startsWith('acessorios-')) return 'acessorios';
+    
+    // Se não conseguir detectar pela categoria, tentar por palavras-chave
+    if (lowerName.includes('short') || lowerName.includes('bermuda')) return 'shorts';
+    if (lowerName.includes('camisa') || lowerName.includes('polo')) return 'camisas';
+    if (lowerName.includes('calca') || lowerName.includes('jeans')) return 'calcas';
+    if (lowerName.includes('dryfit') || lowerName.includes('dry-fit')) return 'dry-fits';
+    if (lowerName.includes('meia') || lowerName.includes('sock')) return 'meias';
+    if (lowerName.includes('cinto') || lowerName.includes('carteira') || lowerName.includes('relogio') || lowerName.includes('bone')) return 'acessorios';
+    
+    // Categoria padrão se não conseguir detectar
+    return 'outros';
+}
+
+// Função para processar nome do arquivo e extrair informações do produto
+function parseProductFileName(fileName) {
+    // Remove extensão
+    const nameWithoutExt = fileName.replace(/\.(jpg|jpeg|png|webp)$/i, '');
+    
+    // Divide por hífen
+    const parts = nameWithoutExt.split('-');
+    
+    if (parts.length < 3) {
+        return {
+            name: nameWithoutExt.replace(/-/g, ' '),
+            price: 'R$ 0,00',
+            originalPrice: null,
+            isPromotion: false
+        };
+    }
+    
+    // Verifica se é promoção (tem dois preços)
+    const lastPart = parts[parts.length - 1];
+    const secondLastPart = parts[parts.length - 2];
+    
+    const hasPrice1 = lastPart.match(/\d+\.\d+/);
+    const hasPrice2 = secondLastPart.match(/\d+\.\d+/);
+    
+    if (hasPrice1 && hasPrice2) {
+        // É promoção: Categoria-Nome-PreçoOriginal-PreçoDesconto
+        const productName = parts.slice(1, -2).join(' ');
+        const originalPrice = 'R$ ' + secondLastPart.replace('.', ',');
+        const price = 'R$ ' + lastPart.replace('.', ',');
+        
+        return {
+            name: productName,
+            price: price,
+            originalPrice: originalPrice,
+            isPromotion: true
+        };
+    } else if (hasPrice1) {
+        // Produto normal: Categoria-Nome-Preço
+        const productName = parts.slice(1, -1).join(' ');
+        const price = 'R$ ' + lastPart.replace('.', ',');
+        
+        return {
+            name: productName,
+            price: price,
+            originalPrice: null,
+            isPromotion: false
+        };
+    } else {
+        // Sem preço identificado
+        return {
+            name: parts.slice(1).join(' '),
+            price: 'R$ 0,00',
+            originalPrice: null,
+            isPromotion: false
+        };
+    }
+}
+
+// Função para verificar se a configuração do Google Drive está correta
+async function checkGoogleDriveConfig() {
+    if (GOOGLE_DRIVE_CONFIG.PRODUTOS_FOLDER_ID === 'SUA_PASTA_PRODUTOS_ID_AQUI' || 
+        GOOGLE_DRIVE_CONFIG.API_KEY === 'SUA_API_KEY_AQUI') {
+        console.warn('⚠️ Configuração do Google Drive não foi definida!');
+        console.log('📋 Para configurar:');
+        console.log('1. Substitua PRODUTOS_FOLDER_ID pelo ID da pasta "GF Store/Produtos"');
+        console.log('2. Substitua API_KEY pela sua chave da API do Google Drive');
+        console.log('3. Certifique-se que a pasta tem permissão pública de visualização');
+        return false;
+    }
+    
+    try {
+        // Teste simples para verificar se a API está funcionando
+        const testUrl = `${GOOGLE_DRIVE_CONFIG.API_BASE_URL}/files/${GOOGLE_DRIVE_CONFIG.PRODUTOS_FOLDER_ID}?key=${GOOGLE_DRIVE_CONFIG.API_KEY}&fields=name`;
+        const response = await fetch(testUrl);
+        
+        if (response.ok) {
+            const data = await response.json();
+            console.log(`✅ Google Drive conectado com sucesso! Pasta: "${data.name}"`);
+            return true;
+        } else {
+            console.error('❌ Erro na configuração do Google Drive:', response.status, response.statusText);
+            return false;
+        }
+    } catch (error) {
+        console.error('❌ Erro ao conectar com Google Drive:', error);
+        return false;
+    }
+}
+
+// Função utilitária para obter ID da pasta do Google Drive pela URL
+function extractFolderIdFromUrl(url) {
+    // Extrai ID de URLs como: https://drive.google.com/drive/folders/ID_DA_PASTA
+    const match = url.match(/\/folders\/([a-zA-Z0-9-_]+)/);
+    if (match) {
+        return match[1];
+    }
+    console.warn('URL inválida. Use uma URL no formato: https://drive.google.com/drive/folders/ID_DA_PASTA');
+    return null;
+}
+
+// Função para carregar produtos de uma categoria específica do Google Drive
+async function loadCategoryProducts(category) {
     const productsContainer = document.getElementById('products-container');
     if (!productsContainer) return;
     
     // Verificar cache primeiro
     if (categoryCache[category]) {
         renderProductsFromCache(categoryCache[category], productsContainer);
-        // Reconfigurar filtros após renderizar do cache
         setTimeout(() => {
             setupFiltersAndSort();
         }, 100);
@@ -228,28 +693,46 @@ function loadCategoryProducts(category) {
     // Mostrar loading
     showLoadingState(productsContainer);
     
-    setTimeout(() => {
-        // Limpar container
-        productsContainer.innerHTML = '';
-        
-        let allProducts = [];
-        
-        // Carregar produtos normais da categoria
-        if (produtosPorCategoria[category]) {
-            produtosPorCategoria[category].forEach(produto => {
-                const card = createProductCard(produto, false, category);
-                allProducts.push(card);
-                productsContainer.appendChild(card);
-            });
+    try {
+        // Buscar todos os produtos se ainda não foram carregados
+        if (allProductsCache.length === 0) {
+            const files = await fetchAllProducts();
+            allProductsCache = files;
         }
         
-        // Carregar promoções da categoria
-        if (promocoesPorCategoria[category]) {
-            promocoesPorCategoria[category].forEach(promocao => {
-                const card = createProductCard(promocao, true, category);
+        // Filtrar produtos da categoria específica
+        const categoryProducts = allProductsCache.filter(file => {
+            const detectedCategory = categorizeProductFromFileName(file.name);
+            return detectedCategory === category;
+        });
+        
+        if (categoryProducts.length === 0) {
+            productsContainer.innerHTML = `
+                <div style="text-align: center; padding: 3rem; color: #666;">
+                    <h3>Nenhum produto encontrado</h3>
+                    <p>Ainda não há produtos na categoria "${getCategoryName(category)}".</p>
+                    <p style="font-size: 0.9rem; margin-top: 1rem;">Certifique-se que as imagens estão na pasta do Google Drive com o padrão: <br><code>${category.charAt(0).toUpperCase() + category.slice(1)}-Nome-Produto-Preço.jpg</code></p>
+                </div>
+            `;
+            return;
+        }
+        
+        // Limpar container
+        productsContainer.innerHTML = '';
+        let allProducts = [];
+        
+        // Processar cada arquivo da categoria
+        for (const file of categoryProducts) {
+            try {
+                const productInfo = parseProductFileName(file.name);
+                const card = await createProductCardFromDrive(file, productInfo, category);
                 allProducts.push(card);
                 productsContainer.appendChild(card);
-            });
+                
+                console.log(`✅ Produto carregado: ${productInfo.name}`);
+            } catch (error) {
+                console.error(`❌ Erro ao processar produto ${file.name}:`, error);
+            }
         }
         
         // Salvar no cache
@@ -263,35 +746,49 @@ function loadCategoryProducts(category) {
             setupFiltersAndSort();
         }, 600);
         
-    }, 500); // Simular tempo de carregamento
+        console.log(`📦 Carregados ${allProducts.length} produtos da categoria ${category}`);
+        
+    } catch (error) {
+        console.error('❌ Erro ao carregar produtos:', error);
+        productsContainer.innerHTML = `
+            <div style="text-align: center; padding: 3rem; color: #666;">
+                <h3>Erro ao carregar produtos</h3>
+                <p>Verifique a configuração do Google Drive:</p>
+                <ul style="text-align: left; display: inline-block; margin-top: 1rem;">
+                    <li>A pasta está pública?</li>
+                    <li>A API Key está correta?</li>
+                    <li>O ID da pasta está correto?</li>
+                </ul>
+                <p style="margin-top: 1rem;"><small>Erro: ${error.message}</small></p>
+            </div>
+        `;
+    }
 }
 
-// Função para carregar todos os produtos
-function loadAllProducts() {
+// Função para carregar todos os produtos de todas as categorias
+async function loadAllProducts() {
     const productsContainer = document.getElementById('products-container');
     if (!productsContainer) return;
     
     // Mostrar loading
     showLoadingState(productsContainer);
     
-    setTimeout(() => {
+    try {
+        // Buscar todos os produtos se ainda não foram carregados
+        if (allProductsCache.length === 0) {
+            const files = await fetchAllProducts();
+            allProductsCache = files.filter(file => file.name.match(/\.(jpg|jpeg|png|webp)$/i));
+        }
+        
         // Limpar container
         productsContainer.innerHTML = '';
         
-        // Carregar produtos de todas as categorias
-        Object.keys(produtosPorCategoria).forEach(category => {
-            produtosPorCategoria[category].forEach(produto => {
-                const card = createProductCard(produto, false, category);
-                productsContainer.appendChild(card);
-            });
-        });
-        
-        // Carregar promoções de todas as categorias
-        Object.keys(promocoesPorCategoria).forEach(category => {
-            promocoesPorCategoria[category].forEach(promocao => {
-                const card = createProductCard(promocao, true, category);
-                productsContainer.appendChild(card);
-            });
+        // Processar todos os produtos
+        allProductsCache.forEach(file => {
+            const category = categorizeProductFromFileName(file.name);
+            const productInfo = parseProductFileName(file.name);
+            const card = createProductCardFromDrive(file, productInfo, category);
+            productsContainer.appendChild(card);
         });
         
         // Adicionar animação de entrada
@@ -302,7 +799,15 @@ function loadAllProducts() {
             setupFiltersAndSort();
         }, 850);
         
-    }, 750);
+    } catch (error) {
+        console.error('Erro ao carregar todos os produtos:', error);
+        productsContainer.innerHTML = `
+            <div style="text-align: center; padding: 3rem; color: #666;">
+                <h3>Erro ao carregar produtos</h3>
+                <p>Tente novamente mais tarde ou verifique a configuração do Google Drive.</p>
+            </div>
+        `;
+    }
 }
 
 // Função para mostrar estado de carregamento
@@ -348,178 +853,71 @@ function renderProductsFromCache(products, container) {
     animateProductCards();
 }
 
-// Função para criar um card de produto
+// Função para criar um card de produto (mantida para compatibilidade com código legado)
 function createProductCard(filename, isPromotion, category = '') {
-    const card = document.createElement('div');
-    card.className = 'product-card';
-    card.dataset.category = category;
-    card.dataset.promotion = isPromotion;
+    // Esta função é mantida para compatibilidade, mas não será mais usada
+    // com a integração do Google Drive
+    console.warn('createProductCard (legado) chamada. Use createProductCardFromDrive para Google Drive.');
     
-    let productName, price, originalPrice = null;
-    let extractedCategory = '';
+    const productInfo = parseProductFileName(filename);
+    const mockFile = { 
+        name: filename, 
+        id: 'mock-id',
+        thumbnailLink: null
+    };
     
-    if (isPromotion) {
-        // Formato: Categoria-Nome-PreçoAnterior-PreçoPosterior.jpg
-        const parts = filename.replace('.jpg', '').split('-');
-        
-        if (parts.length >= 4) {
-            extractedCategory = parts[0];
-            
-            let priceIndex = -1;
-            for (let i = parts.length - 2; i >= 1; i--) {
-                if (parts[i].includes('.') && parts[i+1] && parts[i+1].includes('.')) {
-                    priceIndex = i;
-                    break;
-                }
-            }
-            
-            if (priceIndex > 1) {
-                productName = parts.slice(1, priceIndex).join(' ');
-                originalPrice = 'R$ ' + parts[priceIndex].replace('.', ',');
-                price = 'R$ ' + parts[priceIndex + 1].replace('.', ',');
-            } else {
-                productName = parts.slice(1).join(' ');
-                price = 'R$ 0,00';
-            }
-        } else {
-            productName = filename.replace('.jpg', '').replace(/-/g, ' ');
-            price = 'R$ 0,00';
-        }
-    } else {
-        // Formato: Categoria-Nome-Preço.jpg
-        const parts = filename.replace('.jpg', '').split('-');
-        
-        if (parts.length >= 3) {
-            extractedCategory = parts[0];
-            const lastPart = parts[parts.length - 1];
-            
-            if (lastPart.includes('.')) {
-                productName = parts.slice(1, -1).join(' ');
-                price = 'R$ ' + lastPart.replace('.', ',');
-            } else {
-                productName = parts.slice(1).join(' ');
-                price = 'R$ 0,00';
-            }
-        } else {
-            productName = filename.replace('.jpg', '').replace(/-/g, ' ');
-            price = 'R$ 0,00';
-        }
-    }
-    
-    // Usar categoria extraída se não foi fornecida
-    if (!category && extractedCategory) {
-        category = extractedCategory.toLowerCase();
-        switch(extractedCategory.toLowerCase()) {
-            case 'dryfits':
-                category = 'dry-fits';
-                break;
-            default:
-                category = extractedCategory.toLowerCase();
-        }
-    }
-    
-    // Determinar caminho da imagem - usando imagens do Unsplash como placeholder
-    let imageUrl;
-    switch(category) {
-        case 'shorts':
-            imageUrl = 'https://images.unsplash.com/photo-1591195853828-11db59a44f6b?w=400&h=500&fit=crop';
-            break;
-        case 'camisas':
-            imageUrl = 'https://images.unsplash.com/photo-1620012253295-c15cc3e65df4?w=400&h=500&fit=crop';
-            break;
-        case 'calcas':
-            imageUrl = 'https://images.unsplash.com/photo-1542272604-787c3835535d?w=400&h=500&fit=crop';
-            break;
-        case 'dry-fits':
-        case 'dryfits':
-            imageUrl = 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=400&h=500&fit=crop';
-            break;
-        case 'meias':
-            imageUrl = 'https://images.unsplash.com/photo-1586790170083-2f9ceadc732d?w=400&h=500&fit=crop';
-            break;
-        case 'acessorios':
-            imageUrl = 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=400&h=500&fit=crop';
-            break;
-        default:
-            imageUrl = 'https://images.unsplash.com/photo-1620012253295-c15cc3e65df4?w=400&h=500&fit=crop';
-    }
-    
-    // Adicionar badge de promoção se aplicável
-    const promotionBadge = isPromotion ? '<div class="promotion-badge">PROMOÇÃO</div>' : '';
-    
-    // Calcular desconto se for promoção
-    let discountPercentage = '';
-    if (isPromotion && originalPrice) {
-        const originalValue = parseFloat(originalPrice.replace('R$ ', '').replace(',', '.'));
-        const currentValue = parseFloat(price.replace('R$ ', '').replace(',', '.'));
-        const discount = Math.round(((originalValue - currentValue) / originalValue) * 100);
-        discountPercentage = `<div class="discount-badge" style="position: absolute; top: 10px; right: 10px; background: #27ae60; color: white; padding: 5px 8px; font-size: 0.7rem; border-radius: 50%; font-weight: bold; min-width: 35px; text-align: center; z-index: 10;">-${discount}%</div>`;
-    }
-    
-    card.innerHTML = `
-        ${promotionBadge}
-        ${discountPercentage}
-        <div class="product-image">
-            <img src="${imageUrl}" alt="${productName}" loading="lazy" 
-                 onerror="this.src='https://images.unsplash.com/photo-1620012253295-c15cc3e65df4?w=400&h=500&fit=crop'" 
-                 onload="this.classList.add('loaded')">
-            <div class="product-actions">
-                <div class="action-btn" title="Favoritar" onclick="toggleFavorite(this, '${productName}')">
-                    <i class="far fa-heart"></i>
-                </div>
-                <div class="action-btn" title="Visualização rápida" onclick="quickView('${filename}', '${productName}', '${price}', '${originalPrice || ''}')">
-                    <i class="far fa-eye"></i>
-                </div>
-                <div class="action-btn" title="Compartilhar" onclick="shareProduct('${productName}')">
-                    <i class="fas fa-share-alt"></i>
-                </div>
-            </div>
-            <div class="product-overlay">
-                <button class="quick-order-btn" onclick="encomendar('${productName}')" style="position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); background: #25d366; color: white; border: none; padding: 8px 15px; border-radius: 20px; font-size: 0.9rem; opacity: 0; transition: opacity 0.3s ease; z-index: 10;">
-                    <i class="fab fa-whatsapp"></i>
-                    Encomendar Rápido
-                </button>
-            </div>
-        </div>
-        <div class="product-info">
-            <h3>${productName}</h3>
-            ${category ? `<span class="product-category" data-category="${category}">${getCategoryName(category)}</span>` : ''}
-            <div class="product-rating">
-                <div class="stars">
-                    ${'★'.repeat(5)}
-                </div>
-                <span class="rating-count">(${Math.floor(Math.random() * 50) + 10})</span>
-            </div>
-            <div class="price-container">
-                ${originalPrice ? `<span class="price-original">${originalPrice}</span>` : ''}
-                <span class="${originalPrice ? 'price-discount' : 'price'}">${price}</span>
-            </div>
-            <div class="product-options">
-                <div class="quantity-selector" style="display: flex; align-items: center; border: 1px solid #ddd; border-radius: 4px; width: fit-content; overflow: hidden; margin: 1rem 0;">
-                    <button onclick="decreaseQuantity(this)" style="background-color: var(--accent-color); border: none; padding: 0.6rem 0.8rem; cursor: pointer; font-size: 1.1rem; font-weight: 600; transition: var(--transition); color: var(--primary-color); min-width: 35px; display: flex; align-items: center; justify-content: center;">-</button>
-                    <input type="number" value="1" min="1" max="10" style="border: none; width: 60px; padding: 0.6rem 0.5rem; text-align: center; font-size: 1rem; font-weight: 500; background-color: white; outline: none; border-left: 1px solid #ddd; border-right: 1px solid #ddd;">
-                    <button onclick="increaseQuantity(this)" style="background-color: var(--accent-color); border: none; padding: 0.6rem 0.8rem; cursor: pointer; font-size: 1.1rem; font-weight: 600; transition: var(--transition); color: var(--primary-color); min-width: 35px; display: flex; align-items: center; justify-content: center;">+</button>
-                </div>
-            </div>
-            <button class="add-to-cart" onclick="encomendar('${productName}')" data-product="${productName}">
-                <i class="fab fa-whatsapp"></i>
-                Encomendar agora
-            </button>
-        </div>
-    `;
-    
-    return card;
+    return createProductCardFromDrive(mockFile, productInfo, category);
 }
 
-// Função para obter nome da categoria em português
-function getCategoryName(category) {
+// Função para verificar se a configuração do Google Drive está correta
+async function checkGoogleDriveConfig() {
+    if (GOOGLE_DRIVE_CONFIG.PRODUTOS_FOLDER_ID === 'SUA_PASTA_PRODUTOS_ID_AQUI' || 
+        GOOGLE_DRIVE_CONFIG.API_KEY === 'SUA_API_KEY_AQUI') {
+        console.warn('⚠️ Configuração do Google Drive não foi definida!');
+        console.log('📋 Para configurar:');
+        console.log('1. Substitua PRODUTOS_FOLDER_ID pelo ID da pasta "GF Store/Produtos"');
+        console.log('2. Substitua API_KEY pela sua chave da API do Google Drive');
+        console.log('3. Certifique-se que a pasta tem permissão pública de visualização');
+        return false;
+    }
+    
+    try {
+        // Teste simples para verificar se a API está funcionando
+        const testUrl = `${GOOGLE_DRIVE_CONFIG.API_BASE_URL}/files/${GOOGLE_DRIVE_CONFIG.PRODUTOS_FOLDER_ID}?key=${GOOGLE_DRIVE_CONFIG.API_KEY}&fields=name`;
+        const response = await fetch(testUrl);
+        
+        if (response.ok) {
+            const data = await response.json();
+            console.log(`✅ Google Drive conectado com sucesso! Pasta: "${data.name}"`);
+            return true;
+        } else {
+            console.error('❌ Erro na configuração do Google Drive:', response.status, response.statusText);
+            return false;
+        }
+    } catch (error) {
+        console.error('❌ Erro ao conectar com Google Drive:', error);
+        return false;
+    }
+}
+
+// Função utilitária para obter ID da pasta do Google Drive pela URL
+function extractFolderIdFromUrl(url) {
+    // Extrai ID de URLs como: https://drive.google.com/drive/folders/ID_DA_PASTA
+    const match = url.match(/\/folders\/([a-zA-Z0-9-_]+)/);
+    if (match) {
+        return match[1];
+    }
+    console.warn('URL inválida. Use uma URL no formato: https://drive.google.com/drive/folders/ID_DA_PASTA');
+    return null;
+
     const categoryNames = {
         'shorts': 'Shorts',
         'camisas': 'Camisas',
         'calcas': 'Calças',
         'dry-fits': 'Dry Fits',
         'meias': 'Meias',
-        'acessorios': 'Acessórios'
+        'acessorios': 'Acessórios',
+        'outros': 'Outros'
     };
     return categoryNames[category] || category;
 }
@@ -655,17 +1053,23 @@ function loadFavorites() {
     });
 }
 
-function quickView(filename, productName, price, originalPrice) {
+function quickView(filename, productName, price, originalPrice, imageUrl) {
     const modal = document.getElementById('quick-view-modal') || createQuickViewModal();
-    const imagePath = filename.includes('promocoes') ? 
-        'https://images.unsplash.com/photo-1620012253295-c15cc3e65df4?w=400&h=500&fit=crop' : 
-        'https://images.unsplash.com/photo-1591195853828-11db59a44f6b?w=400&h=500&fit=crop';
     
-    modal.querySelector('.modal-image img').src = imagePath;
+    // Usar a imagem real do Google Drive se disponível, senão usar fallback
+    const modalImageUrl = imageUrl || 'https://images.unsplash.com/photo-1620012253295-c15cc3e65df4?w=400&h=500&fit=crop';
+    
+    modal.querySelector('.modal-image img').src = modalImageUrl;
     modal.querySelector('.modal-title').textContent = productName;
     modal.querySelector('.modal-price').innerHTML = originalPrice ? 
         `<span class="price-original">${originalPrice}</span> <span class="price-discount">${price}</span>` : 
         `<span class="price">${price}</span>`;
+    
+    // Atualizar botão de encomendar com o nome do produto
+    const orderBtn = modal.querySelector('.btn-primary');
+    if (orderBtn) {
+        orderBtn.setAttribute('onclick', `encomendar('${productName}'); closeModal();`);
+    }
     
     modal.style.display = 'flex';
     document.body.style.overflow = 'hidden';
@@ -1214,10 +1618,16 @@ function trackProductOrder(productName) {
 }
 
 // Função principal de inicialização
-function initializeApp() {
-    console.log('Inicializando aplicação...');
+async function initializeApp() {
+    console.log('🚀 Inicializando GF Store...');
     
     try {
+        // Verificar configuração do Google Drive
+        const driveConfigOk = await checkGoogleDriveConfig();
+        if (!driveConfigOk) {
+            console.warn('⚠️ Google Drive não configurado corretamente. Usando modo de fallback.');
+        }
+        
         // Configurar slideshow apenas se existir
         if (document.querySelector('.slide')) {
             showSlides();
@@ -1257,10 +1667,10 @@ function initializeApp() {
         // Lazy loading para imagens
         setupLazyLoading();
         
-        console.log('GF Store initialized successfully!');
+        console.log('✅ GF Store inicializada com sucesso!');
         
     } catch (error) {
-        console.error('Erro durante a inicialização:', error);
+        console.error('❌ Erro durante a inicialização:', error);
     }
 }
 
