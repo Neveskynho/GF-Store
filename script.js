@@ -1,478 +1,4 @@
-// Função para obter nome da categoria em português
-function getCategoryName(category) {
-    const categoryNames = {
-        'shorts': 'Shorts',
-        'camisas': 'Camisas',
-        'calcas': 'Calças',
-        'dry-fits': 'Dry Fits',
-        'meias': 'Meias',
-        'acessorios': 'Acessórios',
-        'outros': 'Outros'
-    };
-    return categoryNames[category] || category;
-}
-async function checkGoogleDriveConfig() {
-    try {
-        // Verificar se o backend está funcionando
-        const response = await fetch(`${GOOGLE_DRIVE_CONFIG.BACKEND_API_URL.replace('/produtos', '/status')}`);
-        
-        if (response.ok) {
-            const data = await response.json();
-            if (data.success) {
-                console.log(`✅ Backend conectado! Pasta: "${data.folder}"`);
-                return true;
-            }
-        }
-        
-        console.warn('⚠️ Backend não está respondendo corretamente');
-        return false;
-    } catch (error) {
-        console.error('❌ Erro ao conectar com backend:', error);
-        console.log('💡 Certifique-se que o servidor Node.js está rodando');
-        return false;
-    }
-}
-
-// Função principal de inicialização
-async function initializeApp() {
-    console.log('🚀 Inicializando GF Store...');
-    
-    try {
-        // Inicializar Google Auth se estiver no ambiente Node.js
-        if (typeof require !== 'undefined') {
-            initializeGoogleDriveAuth();
-        }
-        
-        // Verificar configuração do backend
-        const backendOk = await checkGoogleDriveConfig();
-        if (!backendOk) {
-            console.warn('⚠️ Backend não configurado. Usando modo de fallback.');
-        }
-        
-        // Configurar slideshow apenas se existir
-        if (document.querySelector('.slide')) {
-            showSlides();
-        }
-        
-        // Configurar carrossel de informações apenas se existir
-        if (document.querySelector('.info-box')) {
-            setupInfoCarousel();
-        }
-        
-        // Configurar menu mobile - SEMPRE
-        setupMobileMenu();
-        
-        // Configurar filtros e ordenação
-        setupFiltersAndSort();
-        
-        // Configurar busca
-        setupSearch();
-        
-        // Carregar produtos (dependendo da página)
-        if (document.getElementById('products-container') || document.getElementById('promotions-container')) {
-            loadProducts();
-        }
-        
-        // Carregar favoritos salvos
-        setTimeout(() => {
-            try {
-                loadFavorites();
-            } catch (error) {
-                console.error('Erro ao carregar favoritos:', error);
-            }
-        }, 500);
-        
-        // Event listeners globais
-        setupGlobalEventListeners();
-        
-        // Lazy loading para imagens
-        setupLazyLoading();
-        
-        console.log('✅ GF Store inicializada com sucesso!');
-        
-    } catch (error) {
-        console.error('❌ Erro durante a inicialização:', error);
-    }
-}
-
-async function createProductCardFromDrive(file, productInfo, category = '') {
-    const card = document.createElement('div');
-    card.className = 'product-card';
-    card.dataset.category = category;
-    card.dataset.promotion = productInfo.isPromotion;
-    
-    // Obter URL da imagem do Google Drive
-    const driveImageUrl = getGoogleDriveImageUrl(file);
-    
-    // Determinar imagem de fallback baseada na categoria
-    let fallbackImageUrl;
-    switch(category) {
-        case 'shorts':
-            fallbackImageUrl = 'https://images.unsplash.com/photo-1591195853828-11db59a44f6b?w=400&h=500&fit=crop';
-            break;
-        case 'camisas':
-            fallbackImageUrl = 'https://images.unsplash.com/photo-1620012253295-c15cc3e65df4?w=400&h=500&fit=crop';
-            break;
-        case 'calcas':
-            fallbackImageUrl = 'https://images.unsplash.com/photo-1542272604-787c3835535d?w=400&h=500&fit=crop';
-            break;
-        case 'dry-fits':
-            fallbackImageUrl = 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=400&h=500&fit=crop';
-            break;
-        case 'meias':
-            fallbackImageUrl = 'https://images.unsplash.com/photo-1586790170083-2f9ceadc732d?w=400&h=500&fit=crop';
-            break;
-        case 'acessorios':
-            fallbackImageUrl = 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=400&h=500&fit=crop';
-            break;
-        default:
-            fallbackImageUrl = 'https://images.unsplash.com/photo-1620012253295-c15cc3e65df4?w=400&h=500&fit=crop';
-    }
-    
-    // Verificar qual URL de imagem usar
-    const finalImageUrl = await createImageWithFallback(driveImageUrl, productInfo.name, fallbackImageUrl);
-    
-    // Adicionar badge de promoção se aplicável
-    const promotionBadge = productInfo.isPromotion ? '<div class="promotion-badge">PROMOÇÃO</div>' : '';
-    
-    // Calcular desconto se for promoção
-    let discountPercentage = '';
-    if (productInfo.isPromotion && productInfo.originalPrice) {
-        const originalValue = parseFloat(productInfo.originalPrice.replace('R$ ', '').replace(',', '.'));
-        const currentValue = parseFloat(productInfo.price.replace('R$ ', '').replace(',', '.'));
-        const discount = Math.round(((originalValue - currentValue) / originalValue) * 100);
-        discountPercentage = `<div class="discount-badge" style="position: absolute; top: 10px; right: 10px; background: #27ae60; color: white; padding: 5px 8px; font-size: 0.7rem; border-radius: 50%; font-weight: bold; min-width: 35px; text-align: center; z-index: 10;">-${discount}%</div>`;
-    }
-    
-    card.innerHTML = `
-        ${promotionBadge}
-        ${discountPercentage}
-        <div class="product-image">
-            <img src="${finalImageUrl}" alt="${productInfo.name}" loading="lazy" 
-                 onerror="this.src='${fallbackImageUrl}'" 
-                 onload="this.classList.add('loaded')"
-                 crossorigin="anonymous">
-            <div class="product-actions">
-                <div class="action-btn" title="Favoritar" onclick="toggleFavorite(this, '${productInfo.name}')">
-                    <i class="far fa-heart"></i>
-                </div>
-                <div class="action-btn" title="Visualização rápida" onclick="quickView('${file.name}', '${productInfo.name}', '${productInfo.price}', '${productInfo.originalPrice || ''}', '${finalImageUrl}')">
-                    <i class="far fa-eye"></i>
-                </div>
-                <div class="action-btn" title="Compartilhar" onclick="shareProduct('${productInfo.name}')">
-                    <i class="fas fa-share-alt"></i>
-                </div>
-            </div>
-            <div class="product-overlay">
-                <button class="quick-order-btn" onclick="encomendar('${productInfo.name}')" style="position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); background: #25d366; color: white; border: none; padding: 8px 15px; border-radius: 20px; font-size: 0.9rem; opacity: 0; transition: opacity 0.3s ease; z-index: 10;">
-                    <i class="fab fa-whatsapp"></i>
-                    Encomendar Rápido
-                </button>
-            </div>
-        </div>
-        <div class="product-info">
-            <h3>${productInfo.name}</h3>
-            ${category ? `<span class="product-category" data-category="${category}">${getCategoryName(category)}</span>` : ''}
-            <div class="product-rating">
-                <div class="stars">
-                    ${'★'.repeat(5)}
-                </div>
-                <span class="rating-count">(${Math.floor(Math.random() * 50) + 10})</span>
-            </div>
-            <div class="price-container">
-                ${productInfo.originalPrice ? `<span class="price-original">${productInfo.originalPrice}</span>` : ''}
-                <span class="${productInfo.originalPrice ? 'price-discount' : 'price'}">${productInfo.price}</span>
-            </div>
-            <div class="product-options">
-                <div class="quantity-selector" style="display: flex; align-items: center; border: 1px solid #ddd; border-radius: 4px; width: fit-content; overflow: hidden; margin: 1rem 0;">
-                    <button onclick="decreaseQuantity(this)" style="background-color: var(--accent-color); border: none; padding: 0.6rem 0.8rem; cursor: pointer; font-size: 1.1rem; font-weight: 600; transition: var(--transition); color: var(--primary-color); min-width: 35px; display: flex; align-items: center; justify-content: center;">-</button>
-                    <input type="number" value="1" min="1" max="10" style="border: none; width: 60px; padding: 0.6rem 0.5rem; text-align: center; font-size: 1rem; font-weight: 500; background-color: white; outline: none; border-left: 1px solid #ddd; border-right: 1px solid #ddd;">
-                    <button onclick="increaseQuantity(this)" style="background-color: var(--accent-color); border: none; padding: 0.6rem 0.8rem; cursor: pointer; font-size: 1.1rem; font-weight: 600; transition: var(--transition); color: var(--primary-color); min-width: 35px; display: flex; align-items: center; justify-content: center;">+</button>
-                </div>
-            </div>
-            <button class="add-to-cart" onclick="encomendar('${productInfo.name}')" data-product="${productInfo.name}">
-                <i class="fab fa-whatsapp"></i>
-                Encomendar agora
-            </button>
-        </div>
-    `;
-    
-    return card;
-}
-
-// Função para carregar produtos até R$ 6,00 (mantida para compatibilidade)
-function loadBudgetProducts() {
-    // Filtrar produtos com preço até 6 reais
-    console.log('Carregando produtos até R$ 6,00...');
-    
-    const productsContainer = document.getElementById('products-container');
-    if (!productsContainer) return;
-    
-    showLoadingState(productsContainer);
-    
-    setTimeout(async () => {
-        try {
-            // Buscar todos os produtos se ainda não foram carregados
-            if (allProductsCache.length === 0) {
-                const files = await fetchAllProducts();
-                allProductsCache = files.filter(file => file.name.match(/\.(jpg|jpeg|png|webp)$/i));
-            }
-            
-            // Filtrar produtos até R$ 6,00
-            const budgetProducts = allProductsCache.filter(file => {
-                const productInfo = parseProductFileName(file.name);
-                const price = parseFloat(productInfo.price.replace('R$ ', '').replace(',', '.'));
-                return price <= 6.00;
-            });
-            
-            productsContainer.innerHTML = '';
-            
-            if (budgetProducts.length === 0) {
-                productsContainer.innerHTML = `
-                    <div style="text-align: center; padding: 3rem; color: #666;">
-                        <h3>Nenhum produto encontrado</h3>
-                        <p>Não há produtos até R$ 6,00 disponíveis no momento.</p>
-                    </div>
-                `;
-                return;
-            }
-            
-            budgetProducts.forEach(file => {
-                const category = categorizeProductFromFileName(file.name);
-                const productInfo = parseProductFileName(file.name);
-                const card = createProductCardFromDrive(file, productInfo, category);
-                productsContainer.appendChild(card);
-            });
-            
-            animateProductCards();
-        } catch (error) {
-            console.error('Erro ao carregar produtos até R$ 6,00:', error);
-            productsContainer.innerHTML = `
-                <div style="text-align: center; padding: 3rem; color: #666;">
-                    <h3>Erro ao carregar produtos</h3>
-                    <p>Tente novamente mais tarde.</p>
-                </div>
-            `;
-        }
-    }, 600);
-}
-
-// Função para carregar produtos até R$ 6,00 por categoria (mantida para compatibilidade)
-function loadBudgetProductsByCategory(category) {
-    console.log(`Carregando produtos até R$ 6,00 da categoria ${category}...`);
-    
-    const productsContainer = document.getElementById('products-container');
-    if (!productsContainer) return;
-    
-    showLoadingState(productsContainer);
-    
-    setTimeout(async () => {
-        try {
-            // Buscar todos os produtos se ainda não foram carregados
-            if (allProductsCache.length === 0) {
-                const files = await fetchAllProducts();
-                allProductsCache = files.filter(file => file.name.match(/\.(jpg|jpeg|png|webp)$/i));
-            }
-            
-            // Filtrar produtos da categoria até R$ 6,00
-            const budgetCategoryProducts = allProductsCache.filter(file => {
-                const detectedCategory = categorizeProductFromFileName(file.name);
-                const productInfo = parseProductFileName(file.name);
-                const price = parseFloat(productInfo.price.replace('R$ ', '').replace(',', '.'));
-                return detectedCategory === category && price <= 6.00;
-            });
-            
-            productsContainer.innerHTML = '';
-            
-            if (budgetCategoryProducts.length === 0) {
-                productsContainer.innerHTML = `
-                    <div style="text-align: center; padding: 3rem; color: #666;">
-                        <h3>Nenhum produto encontrado</h3>
-                        <p>Não há produtos de "${getCategoryName(category)}" até R$ 6,00 disponíveis.</p>
-                    </div>
-                `;
-                return;
-            }
-            
-            budgetCategoryProducts.forEach(file => {
-                const productInfo = parseProductFileName(file.name);
-                const card = createProductCardFromDrive(file, productInfo, category);
-                productsContainer.appendChild(card);
-            });
-            
-            animateProductCards();
-        } catch (error) {
-            console.error('Erro ao carregar produtos até R$ 6,00 por categoria:', error);
-            productsContainer.innerHTML = `
-                <div style="text-align: center; padding: 3rem; color: #666;">
-                    <h3>Erro ao carregar produtos</h3>
-                    <p>Tente novamente mais tarde.</p>
-                </div>
-            `;
-        }
-    }, 400);
-}
-
-// Função para carregar produtos dinamicamente (versão para home)
-async function loadProducts() {
-    try {
-        // Buscar todos os produtos se ainda não foram carregados
-        if (allProductsCache.length === 0) {
-            const files = await fetchAllProducts();
-            allProductsCache = files.filter(file => file.name.match(/\.(jpg|jpeg|png|webp)$/i));
-        }
-        
-        const productsContainer = document.getElementById('products-container');
-        const promotionsContainer = document.getElementById('promotions-container');
-        
-        if (productsContainer) {
-            // Carregar alguns produtos normais (não promoções) para a seção "Novidades"
-            const regularProducts = allProductsCache.filter(file => {
-                const productInfo = parseProductFileName(file.name);
-                return !productInfo.isPromotion;
-            }).slice(0, 8); // Pegar apenas os primeiros 8 produtos
-            
-            regularProducts.forEach(file => {
-                const category = categorizeProductFromFileName(file.name);
-                const productInfo = parseProductFileName(file.name);
-                const card = createProductCardFromDrive(file, productInfo, category);
-                productsContainer.appendChild(card);
-            });
-        }
-        
-        if (promotionsContainer) {
-            // Carregar produtos em promoção para a seção "Promoções"
-            const promotionProducts = allProductsCache.filter(file => {
-                const productInfo = parseProductFileName(file.name);
-                return productInfo.isPromotion;
-            }).slice(0, 6); // Pegar apenas os primeiros 6 produtos em promoção
-            
-            promotionProducts.forEach(file => {
-                const category = categorizeProductFromFileName(file.name);
-                const productInfo = parseProductFileName(file.name);
-                const card = createProductCardFromDrive(file, productInfo, category);
-                promotionsContainer.appendChild(card);
-            });
-        }
-        
-        // Animar cards após carregamento
-        setTimeout(animateProductCards, 100);
-        
-    } catch (error) {
-        console.error('Erro ao carregar produtos para home:', error);
-        
-        // Fallback: usar produtos estáticos se houver erro
-        const produtos = [
-            { name: 'Shorts Moletom Cinza', price: 'R$ 49,90', category: 'shorts' },
-            { name: 'Camisa Social Branca', price: 'R$ 89,90', category: 'camisas' },
-            { name: 'Calça Jeans Skinny', price: 'R$ 119,90', category: 'calcas' },
-            { name: 'Dry Fit Básica Preta', price: 'R$ 34,90', category: 'dry-fits' }
-        ];
-        
-        const productsContainer = document.getElementById('products-container');
-        if (productsContainer) {
-            produtos.forEach(produto => {
-                const card = createFallbackProductCard(produto);
-                productsContainer.appendChild(card);
-            });
-        }
-    }
-}
-
-// Função auxiliar para criar card de produto fallback
-function createFallbackProductCard(produto) {
-    const card = document.createElement('div');
-    card.className = 'product-card';
-    card.dataset.category = produto.category;
-    
-    // Determinar imagem baseada na categoria
-    let imageUrl;
-    switch(produto.category) {
-        case 'shorts':
-            imageUrl = 'https://images.unsplash.com/photo-1591195853828-11db59a44f6b?w=400&h=500&fit=crop';
-            break;
-        case 'camisas':
-            imageUrl = 'https://images.unsplash.com/photo-1620012253295-c15cc3e65df4?w=400&h=500&fit=crop';
-            break;
-        case 'calcas':
-            imageUrl = 'https://images.unsplash.com/photo-1542272604-787c3835535d?w=400&h=500&fit=crop';
-            break;
-        case 'dry-fits':
-            imageUrl = 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=400&h=500&fit=crop';
-            break;
-        default:
-            imageUrl = 'https://images.unsplash.com/photo-1620012253295-c15cc3e65df4?w=400&h=500&fit=crop';
-    }
-    
-    card.innerHTML = `
-        <div class="product-image">
-            <img src="${imageUrl}" alt="${produto.name}" loading="lazy">
-            <div class="product-actions">
-                <div class="action-btn" title="Favoritar" onclick="toggleFavorite(this, '${produto.name}')">
-                    <i class="far fa-heart"></i>
-                </div>
-                <div class="action-btn" title="Compartilhar" onclick="shareProduct('${produto.name}')">
-                    <i class="fas fa-share-alt"></i>
-                </div>
-            </div>
-        </div>
-        <div class="product-info">
-            <h3>${produto.name}</h3>
-            <span class="product-category" data-category="${produto.category}">${getCategoryName(produto.category)}</span>
-            <div class="product-rating">
-                <div class="stars">${'★'.repeat(5)}</div>
-                <span class="rating-count">(${Math.floor(Math.random() * 50) + 10})</span>
-            </div>
-            <div class="price-container">
-                <span class="price">${produto.price}</span>
-            </div>
-            <button class="add-to-cart" onclick="encomendar('${produto.name}')" data-product="${produto.name}">
-                <i class="fab fa-whatsapp"></i>
-                Encomendar agora
-            </button>
-        </div>
-    `;
-    
-    return card;
-}// Slideshow functionality for hero section
-let slideIndex = 0;
-
-function showSlides() {
-    let i;
-    let slides = document.getElementsByClassName("slide");
-    let dots = document.getElementsByClassName("dot");
-    
-    if (slides.length === 0) return; // Se não há slides, não faz nada
-    
-    // Hide all slides
-    for (i = 0; i < slides.length; i++) {
-        slides[i].style.display = "none";
-    }
-    
-    // Remove active class from dots
-    for (i = 0; i < dots.length; i++) {
-        dots[i].className = dots[i].className.replace(" active", "");
-    }
-    
-    // Increment slide index
-    slideIndex++;
-    
-    // Reset if at end
-    if (slideIndex > slides.length) {
-        slideIndex = 1;
-    }
-    
-    // Display current slide and mark dot as active
-    if (slides[slideIndex-1]) {
-        slides[slideIndex-1].style.display = "block";
-    }
-    if (dots[slideIndex-1]) {
-        dots[slideIndex-1].className += " active";
-    }
-    
-    // Change slide every 4 seconds
-    setTimeout(showSlides, 4000);
-}
+// ===== PARTE 1: CONFIGURAÇÕES E FUNÇÕES UTILITÁRIAS =====
 
 // Configuração do Google Drive (Frontend apenas)
 const GOOGLE_DRIVE_CONFIG = {
@@ -491,65 +17,92 @@ let productCache = {};
 let categoryCache = {};
 let allProductsCache = [];
 
-// Função para buscar todos os produtos da pasta "GF Store/Produtos"
-async function fetchAllProducts() {
-    try {
-        const url = `${GOOGLE_DRIVE_CONFIG.API_BASE_URL}/files?q='${GOOGLE_DRIVE_CONFIG.PRODUTOS_FOLDER_ID}'+in+parents&key=${GOOGLE_DRIVE_CONFIG.API_KEY}&fields=files(id,name,webViewLink,webContentLink,thumbnailLink,mimeType)`;
-        
-        const response = await fetch(url);
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+// Função para obter nome da categoria em português
+function getCategoryName(category) {
+    const categoryNames = {
+        'shorts': 'Shorts',
+        'camisas': 'Camisas',
+        'calcas': 'Calças',
+        'dry-fits': 'Dry Fits',
+        'meias': 'Meias',
+        'acessorios': 'Acessórios',
+        'outros': 'Outros'
+    };
+    return categoryNames[category] || category;
+}
+
+// Função melhorada para obter URL de visualização da imagem do Google Drive
+function getGoogleDriveImageUrl(file) {
+    if (!file || !file.id) {
+        console.warn('Arquivo sem ID válido:', file);
+        return null;
+    }
+    
+    // Usar URL de thumbnail que é mais estável
+    const thumbnailUrl = `https://drive.google.com/thumbnail?id=${file.id}&sz=w400-h400`;
+    
+    console.log(`📸 URL da imagem gerada para ${file.name}:`, thumbnailUrl);
+    
+    return thumbnailUrl;
+}
+
+// Função para verificar se a imagem carrega e aplicar fallback
+async function createImageWithFallback(driveImageUrl, productName, fallbackUrl) {
+    return new Promise((resolve) => {
+        // Se não há URL do Drive, usar fallback imediatamente
+        if (!driveImageUrl) {
+            console.warn(`Sem URL do Drive para ${productName}, usando fallback`);
+            resolve(fallbackUrl);
+            return;
         }
         
-        const data = await response.json();
-        
-        // Filtrar apenas arquivos de imagem
-        const imageFiles = (data.files || []).filter(file => 
-            file.name && file.name.match(/\.(jpg|jpeg|png|webp)$/i)
-        );
-        
-        console.log(`📁 Encontrados ${imageFiles.length} produtos`);
-        return imageFiles;
-    } catch (error) {
-        console.error('Erro ao buscar produtos do Google Drive:', error);
-        return [];
-    }
-}
-
-// Função para obter URL de visualização da imagem do Google Drive
-function getGoogleDriveImageUrl(file) {
-    // Método 1: URL direta de visualização (mais confiável)
-    if (file.id) {
-        return `https://drive.google.com/uc?id=${file.id}&export=view`;
-    }
-    
-    // Método 2: Thumbnail em alta resolução (backup)
-    if (file.thumbnailLink) {
-        return file.thumbnailLink.replace('=s220', '=s800');
-    }
-    
-    // Método 3: Fallback para imagem padrão
-    return 'https://images.unsplash.com/photo-1620012253295-c15cc3e65df4?w=400&h=500&fit=crop';
-}
-
-// Função para verificar se a imagem do Google Drive carrega corretamente
-function createImageWithFallback(imageUrl, alt, fallbackUrl) {
-    return new Promise((resolve) => {
         const img = new Image();
         
+        // Timeout mais curto para evitar carregamento infinito
+        const timeout = setTimeout(() => {
+            console.warn(`⏰ Timeout na imagem do Drive para ${productName}, usando fallback`);
+            resolve(fallbackUrl);
+        }, 3000); // 3 segundos apenas
+        
         img.onload = function() {
-            // Imagem carregou com sucesso
-            resolve(imageUrl);
+            clearTimeout(timeout);
+            console.log(`✅ Imagem do Drive carregada com sucesso: ${productName}`);
+            resolve(driveImageUrl);
         };
         
         img.onerror = function() {
-            // Erro ao carregar, usar fallback
-            console.warn(`Erro ao carregar imagem: ${imageUrl}`);
-            resolve(fallbackUrl || 'https://images.unsplash.com/photo-1620012253295-c15cc3e65df4?w=400&h=500&fit=crop');
+            clearTimeout(timeout);
+            console.warn(`❌ Erro ao carregar imagem do Drive para ${productName}, usando fallback`);
+            resolve(fallbackUrl);
         };
         
-        img.src = imageUrl;
+        // Tentar carregar a imagem
+        img.src = driveImageUrl;
     });
+}
+
+// Função para lidar com erro de carregamento de imagem
+function handleImageError(img) {
+    console.warn(`❌ Erro ao carregar imagem: ${img.src}`);
+    
+    // Usar diretamente o fallback sem mais tentativas
+    const fallbackUrl = img.dataset.fallbackUrl;
+    if (fallbackUrl && img.src !== fallbackUrl) {
+        console.log('🔄 Usando imagem de fallback...');
+        img.src = fallbackUrl;
+        img.style.opacity = '1'; // Garantir que aparece
+    } else {
+        // Última tentativa com uma imagem genérica
+        img.src = 'https://via.placeholder.com/400x400/e0e0e0/666666?text=Produto';
+        img.style.opacity = '1';
+    }
+}
+
+// Função para lidar com sucesso no carregamento de imagem
+function handleImageLoad(img) {
+    console.log(`✅ Imagem carregada com sucesso: ${img.alt}`);
+    img.classList.add('loaded');
+    img.style.opacity = '1'; // Garantir visibilidade
 }
 
 // Função para processar e categorizar produtos baseado no nome do arquivo
@@ -634,37 +187,6 @@ function parseProductFileName(fileName) {
     }
 }
 
-// Função para verificar se a configuração do Google Drive está correta
-async function checkGoogleDriveConfig() {
-    if (GOOGLE_DRIVE_CONFIG.PRODUTOS_FOLDER_ID === 'SUA_PASTA_PRODUTOS_ID_AQUI' || 
-        GOOGLE_DRIVE_CONFIG.API_KEY === 'SUA_API_KEY_AQUI') {
-        console.warn('⚠️ Configuração do Google Drive não foi definida!');
-        console.log('📋 Para configurar:');
-        console.log('1. Substitua PRODUTOS_FOLDER_ID pelo ID da pasta "GF Store/Produtos"');
-        console.log('2. Substitua API_KEY pela sua chave da API do Google Drive');
-        console.log('3. Certifique-se que a pasta tem permissão pública de visualização');
-        return false;
-    }
-    
-    try {
-        // Teste simples para verificar se a API está funcionando
-        const testUrl = `${GOOGLE_DRIVE_CONFIG.API_BASE_URL}/files/${GOOGLE_DRIVE_CONFIG.PRODUTOS_FOLDER_ID}?key=${GOOGLE_DRIVE_CONFIG.API_KEY}&fields=name`;
-        const response = await fetch(testUrl);
-        
-        if (response.ok) {
-            const data = await response.json();
-            console.log(`✅ Google Drive conectado com sucesso! Pasta: "${data.name}"`);
-            return true;
-        } else {
-            console.error('❌ Erro na configuração do Google Drive:', response.status, response.statusText);
-            return false;
-        }
-    } catch (error) {
-        console.error('❌ Erro ao conectar com Google Drive:', error);
-        return false;
-    }
-}
-
 // Função utilitária para obter ID da pasta do Google Drive pela URL
 function extractFolderIdFromUrl(url) {
     // Extrai ID de URLs como: https://drive.google.com/drive/folders/ID_DA_PASTA
@@ -676,42 +198,387 @@ function extractFolderIdFromUrl(url) {
     return null;
 }
 
-// Função para carregar produtos de uma categoria específica do Google Drive
-async function loadCategoryProducts(category) {
+// ===== PARTE 2: FUNÇÕES DE API E CRIAÇÃO DE CARDS =====
+
+// Função para testar conectividade com Google Drive
+async function testGoogleDriveConnection() {
+    try {
+        console.log('🔍 Testando conexão com Google Drive...');
+        
+        const testUrl = `${GOOGLE_DRIVE_CONFIG.API_BASE_URL}/files?q='${GOOGLE_DRIVE_CONFIG.PRODUTOS_FOLDER_ID}'+in+parents&key=${GOOGLE_DRIVE_CONFIG.API_KEY}&fields=files(id,name)&pageSize=1`;
+        
+        const response = await fetch(testUrl);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        
+        if (data.files && data.files.length > 0) {
+            console.log('✅ Conexão com Google Drive OK');
+            console.log('📁 Primeira arquivo encontrado:', data.files[0].name);
+            
+            // Testar URL de imagem do primeiro arquivo
+            const testFile = data.files[0];
+            const imageUrl = getGoogleDriveImageUrl(testFile);
+            console.log('🖼️ URL de teste da imagem:', imageUrl);
+            
+            return true;
+        } else {
+            console.warn('⚠️ Pasta do Google Drive está vazia');
+            return false;
+        }
+        
+    } catch (error) {
+        console.error('❌ Erro ao testar Google Drive:', error);
+        return false;
+    }
+}
+
+// Função melhorada para buscar todos os produtos com debugging
+async function fetchAllProductsWithDebug() {
+    try {
+        console.log('📂 Buscando produtos do Google Drive...');
+        console.log('🔧 Configuração:', {
+            folderId: GOOGLE_DRIVE_CONFIG.PRODUTOS_FOLDER_ID,
+            apiKey: GOOGLE_DRIVE_CONFIG.API_KEY ? '***' + GOOGLE_DRIVE_CONFIG.API_KEY.slice(-4) : 'NÃO DEFINIDA'
+        });
+        
+        const url = `${GOOGLE_DRIVE_CONFIG.API_BASE_URL}/files?q='${GOOGLE_DRIVE_CONFIG.PRODUTOS_FOLDER_ID}'+in+parents&key=${GOOGLE_DRIVE_CONFIG.API_KEY}&fields=files(id,name,webViewLink,webContentLink,thumbnailLink,mimeType,size)`;
+        
+        console.log('🌐 URL da requisição:', url.replace(GOOGLE_DRIVE_CONFIG.API_KEY, '***'));
+        
+        const response = await fetch(url);
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('❌ Erro HTTP:', response.status, response.statusText);
+            console.error('📄 Resposta:', errorText);
+            throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
+        }
+        
+        const data = await response.json();
+        console.log('📊 Resposta completa da API:', data);
+        
+        // Filtrar apenas arquivos de imagem
+        const imageFiles = (data.files || []).filter(file => {
+            const isImage = file.name && file.name.match(/\.(jpg|jpeg|png|webp)$/i);
+            if (!isImage) {
+                console.log(`⏭️ Ignorando arquivo não-imagem: ${file.name}`);
+            }
+            return isImage;
+        });
+        
+        console.log(`📁 Total de arquivos encontrados: ${data.files?.length || 0}`);
+        console.log(`🖼️ Arquivos de imagem válidos: ${imageFiles.length}`);
+        
+        // Log detalhado de cada arquivo de imagem
+        imageFiles.forEach((file, index) => {
+            console.log(`📸 Arquivo ${index + 1}:`, {
+                name: file.name,
+                id: file.id,
+                size: file.size,
+                mimeType: file.mimeType
+            });
+        });
+        
+        return imageFiles;
+    } catch (error) {
+        console.error('❌ Erro ao buscar produtos do Google Drive:', error);
+        return [];
+    }
+}
+
+// Função original mantida para compatibilidade
+async function fetchAllProducts() {
+    return await fetchAllProductsWithDebug();
+}
+
+// Função para debug de uma imagem específica
+async function debugImageLoad(file) {
+    console.log(`🔍 Debug da imagem: ${file.name}`);
+    
+    const driveUrl = getGoogleDriveImageUrl(file);
+    console.log(`📎 URL gerada: ${driveUrl}`);
+    
+    // Testar carregamento
+    return new Promise((resolve) => {
+        const img = new Image();
+        
+        img.onload = function() {
+            console.log(`✅ Imagem carregou com sucesso: ${file.name}`);
+            console.log(`📐 Dimensões: ${this.naturalWidth}x${this.naturalHeight}`);
+            resolve(true);
+        };
+        
+        img.onerror = function() {
+            console.error(`❌ Erro ao carregar imagem: ${file.name}`);
+            console.log(`🔧 Tentando URLs alternativas...`);
+            
+            // Testar URL alternativa
+            const alternativeUrl = `https://drive.google.com/thumbnail?id=${file.id}&sz=w400-h300`;
+            const img2 = new Image();
+            
+            img2.onload = function() {
+                console.log(`✅ URL alternativa funcionou: ${file.name}`);
+                resolve(true);
+            };
+            
+            img2.onerror = function() {
+                console.error(`❌ URL alternativa também falhou: ${file.name}`);
+                resolve(false);
+            };
+            
+            img2.src = alternativeUrl;
+        };
+        
+        img.src = driveUrl;
+    });
+}
+
+// Função corrigida para criar card de produto do Google Drive
+function createProductCardFromDriveSync(file, productInfo, category = '') {
+    const card = document.createElement('div');
+    card.className = 'product-card';
+    card.dataset.category = category;
+    card.dataset.promotion = productInfo.isPromotion;
+    card.dataset.productId = file.id; // Adicionar ID único para evitar duplicação
+    
+    console.log(`🔄 Criando card para: ${productInfo.name} (ID: ${file.id})`);
+    
+    // Obter URL da imagem do Google Drive
+    const driveImageUrl = getGoogleDriveImageUrl(file);
+    
+    // Determinar imagem de fallback baseada na categoria
+    let fallbackImageUrl;
+    switch(category) {
+        case 'shorts':
+            fallbackImageUrl = 'https://images.unsplash.com/photo-1591195853828-11db59a44f6b?w=400&h=400&fit=crop';
+            break;
+        case 'camisas':
+            fallbackImageUrl = 'https://images.unsplash.com/photo-1620012253295-c15cc3e65df4?w=400&h=400&fit=crop';
+            break;
+        case 'calcas':
+            fallbackImageUrl = 'https://images.unsplash.com/photo-1542272604-787c3835535d?w=400&h=400&fit=crop';
+            break;
+        case 'dry-fits':
+            fallbackImageUrl = 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=400&h=400&fit=crop';
+            break;
+        case 'meias':
+            fallbackImageUrl = 'https://images.unsplash.com/photo-1586790170083-2f9ceadc732d?w=400&h=400&fit=crop';
+            break;
+        case 'acessorios':
+            fallbackImageUrl = 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=400&h=400&fit=crop';
+            break;
+        default:
+            fallbackImageUrl = 'https://via.placeholder.com/400x400/e0e0e0/666666?text=Produto';
+    }
+    
+    // Usar a imagem do Drive se disponível, senão fallback
+    const finalImageUrl = driveImageUrl || fallbackImageUrl;
+    
+    console.log(`🖼️ URL da imagem para ${productInfo.name}:`, finalImageUrl);
+    
+    // Adicionar badge de promoção se aplicável
+    const promotionBadge = productInfo.isPromotion ? '<div class="promotion-badge">PROMOÇÃO</div>' : '';
+    
+    // Calcular desconto se for promoção
+    let discountPercentage = '';
+    if (productInfo.isPromotion && productInfo.originalPrice) {
+        const originalValue = parseFloat(productInfo.originalPrice.replace('R$ ', '').replace(',', '.'));
+        const currentValue = parseFloat(productInfo.price.replace('R$ ', '').replace(',', '.'));
+        const discount = Math.round(((originalValue - currentValue) / originalValue) * 100);
+        discountPercentage = `<div class="discount-badge" style="position: absolute; top: 10px; right: 10px; background: #27ae60; color: white; padding: 5px 8px; font-size: 0.7rem; border-radius: 50%; font-weight: bold; min-width: 35px; text-align: center; z-index: 10;">-${discount}%</div>`;
+    }
+    
+    card.innerHTML = `
+        ${promotionBadge}
+        ${discountPercentage}
+        <div class="product-image">
+            <img src="${finalImageUrl}" 
+                 alt="${productInfo.name}" 
+                 loading="eager"
+                 data-drive-url="${driveImageUrl || ''}"
+                 data-fallback-url="${fallbackImageUrl}"
+                 onerror="handleImageError(this)" 
+                 onload="handleImageLoad(this)"
+                 style="width: 100%; height: 250px; object-fit: cover; border-radius: 8px 8px 0 0; opacity: 1;">
+            <div class="product-actions">
+                <div class="action-btn" title="Favoritar" onclick="toggleFavorite(this, '${productInfo.name}')">
+                    <i class="far fa-heart"></i>
+                </div>
+                <div class="action-btn" title="Visualização rápida" onclick="quickView('${file.name}', '${productInfo.name}', '${productInfo.price}', '${productInfo.originalPrice || ''}', '${finalImageUrl}')">
+                    <i class="far fa-eye"></i>
+                </div>
+                <div class="action-btn" title="Compartilhar" onclick="shareProduct('${productInfo.name}')">
+                    <i class="fas fa-share-alt"></i>
+                </div>
+            </div>
+            <div class="product-overlay">
+                <button class="quick-order-btn" onclick="encomendar('${productInfo.name}')" style="position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); background: #25d366; color: white; border: none; padding: 8px 15px; border-radius: 20px; font-size: 0.9rem; opacity: 0; transition: opacity 0.3s ease; z-index: 10;">
+                    <i class="fab fa-whatsapp"></i>
+                    Encomendar Rápido
+                </button>
+            </div>
+        </div>
+        <div class="product-info">
+            <h3>${productInfo.name}</h3>
+            ${category ? `<span class="product-category" data-category="${category}">${getCategoryName(category)}</span>` : ''}
+            <div class="product-rating">
+                <div class="stars">
+                    ${'★'.repeat(5)}
+                </div>
+                <span class="rating-count">(${Math.floor(Math.random() * 50) + 10})</span>
+            </div>
+            <div class="price-container">
+                ${productInfo.originalPrice ? `<span class="price-original">${productInfo.originalPrice}</span>` : ''}
+                <span class="${productInfo.originalPrice ? 'price-discount' : 'price'}">${productInfo.price}</span>
+            </div>
+            <div class="product-options">
+                <div class="quantity-selector" style="display: flex; align-items: center; border: 1px solid #ddd; border-radius: 4px; width: fit-content; overflow: hidden; margin: 1rem 0;">
+                    <button onclick="decreaseQuantity(this)" style="background-color: var(--accent-color); border: none; padding: 0.6rem 0.8rem; cursor: pointer; font-size: 1.1rem; font-weight: 600; transition: var(--transition); color: var(--primary-color); min-width: 35px; display: flex; align-items: center; justify-content: center;">-</button>
+                    <input type="number" value="1" min="1" max="10" style="border: none; width: 60px; padding: 0.6rem 0.5rem; text-align: center; font-size: 1rem; font-weight: 500; background-color: white; outline: none; border-left: 1px solid #ddd; border-right: 1px solid #ddd;">
+                    <button onclick="increaseQuantity(this)" style="background-color: var(--accent-color); border: none; padding: 0.6rem 0.8rem; cursor: pointer; font-size: 1.1rem; font-weight: 600; transition: var(--transition); color: var(--primary-color); min-width: 35px; display: flex; align-items: center; justify-content: center;">+</button>
+                </div>
+            </div>
+            <button class="add-to-cart" onclick="encomendar('${productInfo.name}')" data-product="${productInfo.name}">
+                <i class="fab fa-whatsapp"></i>
+                Encomendar agora
+            </button>
+        </div>
+    `;
+    
+    return card;
+}
+
+// Função auxiliar para criar card de produto fallback
+function createFallbackProductCard(produto) {
+    const card = document.createElement('div');
+    card.className = 'product-card';
+    card.dataset.category = produto.category;
+    
+    // Determinar imagem baseada na categoria
+    let imageUrl;
+    switch(produto.category) {
+        case 'shorts':
+            imageUrl = 'https://images.unsplash.com/photo-1591195853828-11db59a44f6b?w=400&h=500&fit=crop';
+            break;
+        case 'camisas':
+            imageUrl = 'https://images.unsplash.com/photo-1620012253295-c15cc3e65df4?w=400&h=500&fit=crop';
+            break;
+        case 'calcas':
+            imageUrl = 'https://images.unsplash.com/photo-1542272604-787c3835535d?w=400&h=500&fit=crop';
+            break;
+        case 'dry-fits':
+            imageUrl = 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=400&h=500&fit=crop';
+            break;
+        default:
+            imageUrl = 'https://images.unsplash.com/photo-1620012253295-c15cc3e65df4?w=400&h=500&fit=crop';
+    }
+    
+    card.innerHTML = `
+        <div class="product-image">
+            <img src="${imageUrl}" alt="${produto.name}" loading="lazy">
+            <div class="product-actions">
+                <div class="action-btn" title="Favoritar" onclick="toggleFavorite(this, '${produto.name}')">
+                    <i class="far fa-heart"></i>
+                </div>
+                <div class="action-btn" title="Compartilhar" onclick="shareProduct('${produto.name}')">
+                    <i class="fas fa-share-alt"></i>
+                </div>
+            </div>
+        </div>
+        <div class="product-info">
+            <h3>${produto.name}</h3>
+            <span class="product-category" data-category="${produto.category}">${getCategoryName(produto.category)}</span>
+            <div class="product-rating">
+                <div class="stars">${'★'.repeat(5)}</div>
+                <span class="rating-count">(${Math.floor(Math.random() * 50) + 10})</span>
+            </div>
+            <div class="price-container">
+                <span class="price">${produto.price}</span>
+            </div>
+            <button class="add-to-cart" onclick="encomendar('${produto.name}')" data-product="${produto.name}">
+                <i class="fab fa-whatsapp"></i>
+                Encomendar agora
+            </button>
+        </div>
+    `;
+    
+    return card;
+}
+
+// ===== PARTE 3: FUNÇÕES PRINCIPAIS E INTERFACE =====
+
+// Função principal corrigida para carregar produtos com debug completo
+async function loadCategoryProductsFixed(category) {
     const productsContainer = document.getElementById('products-container');
     if (!productsContainer) return;
     
-    // Verificar cache primeiro
-    if (categoryCache[category]) {
-        renderProductsFromCache(categoryCache[category], productsContainer);
-        setTimeout(() => {
-            setupFiltersAndSort();
-        }, 100);
-        return;
-    }
+    console.log(`🚀 Carregando produtos da categoria: ${category}`);
     
     // Mostrar loading
     showLoadingState(productsContainer);
     
     try {
-        // Buscar todos os produtos se ainda não foram carregados
-        if (allProductsCache.length === 0) {
-            const files = await fetchAllProducts();
-            allProductsCache = files;
+        // Testar conexão primeiro
+        const connectionOk = await testGoogleDriveConnection();
+        if (!connectionOk) {
+            throw new Error('Falha na conexão com Google Drive');
         }
         
-        // Filtrar produtos da categoria específica
-        const categoryProducts = allProductsCache.filter(file => {
-            const detectedCategory = categorizeProductFromFileName(file.name);
-            return detectedCategory === category;
+        // Buscar todos os produtos com debug
+        const files = await fetchAllProductsWithDebug();
+        
+        if (files.length === 0) {
+            productsContainer.innerHTML = `
+                <div style="text-align: center; padding: 3rem; color: #666;">
+                    <h3>Nenhum arquivo encontrado</h3>
+                    <p>Verifique se há imagens na pasta do Google Drive.</p>
+                    <p><small>Pasta ID: ${GOOGLE_DRIVE_CONFIG.PRODUTOS_FOLDER_ID}</small></p>
+                </div>
+            `;
+            return;
+        }
+        
+        // CORREÇÃO: Remover duplicatas baseado no ID do arquivo
+        const uniqueFiles = [];
+        const seenIds = new Set();
+        
+        files.forEach(file => {
+            if (!seenIds.has(file.id)) {
+                seenIds.add(file.id);
+                uniqueFiles.push(file);
+            } else {
+                console.log(`⚠️ Arquivo duplicado ignorado: ${file.name} (ID: ${file.id})`);
+            }
         });
+        
+        console.log(`📁 Arquivos únicos: ${uniqueFiles.length} de ${files.length} total`);
+        
+        // Filtrar produtos da categoria específica
+        const categoryProducts = uniqueFiles.filter(file => {
+            const detectedCategory = categorizeProductFromFileName(file.name);
+            const matchesCategory = category === 'all' || detectedCategory === category;
+            
+            if (matchesCategory) {
+                console.log(`✅ Produto incluído: ${file.name} -> categoria: ${detectedCategory}`);
+            }
+            
+            return matchesCategory;
+        });
+        
+        console.log(`📦 Produtos encontrados para categoria ${category}: ${categoryProducts.length}`);
         
         if (categoryProducts.length === 0) {
             productsContainer.innerHTML = `
                 <div style="text-align: center; padding: 3rem; color: #666;">
                     <h3>Nenhum produto encontrado</h3>
                     <p>Ainda não há produtos na categoria "${getCategoryName(category)}".</p>
-                    <p style="font-size: 0.9rem; margin-top: 1rem;">Certifique-se que as imagens estão na pasta do Google Drive com o padrão: <br><code>${category.charAt(0).toUpperCase() + category.slice(1)}-Nome-Produto-Preço.jpg</code></p>
+                    <p style="font-size: 0.9rem; margin-top: 1rem;">
+                        Em breve, novos produtos estarão disponíveis nesta categoria. <br>
+                    </p>
                 </div>
             `;
             return;
@@ -719,50 +586,74 @@ async function loadCategoryProducts(category) {
         
         // Limpar container
         productsContainer.innerHTML = '';
-        let allProducts = [];
         
-        // Processar cada arquivo da categoria
-        for (const file of categoryProducts) {
+        // CORREÇÃO: Processar cada arquivo sem async para evitar problemas
+        categoryProducts.forEach((file, index) => {
             try {
+                console.log(`🔄 Processando produto ${index + 1}/${categoryProducts.length}: ${file.name}`);
+                
+                const detectedCategory = categorizeProductFromFileName(file.name);
                 const productInfo = parseProductFileName(file.name);
-                const card = await createProductCardFromDrive(file, productInfo, category);
-                allProducts.push(card);
+                
+                // Usar a categoria detectada, não a passada como parâmetro
+                const finalCategory = category === 'all' ? detectedCategory : category;
+                
+                const card = createProductCardFromDriveSync(file, productInfo, finalCategory);
                 productsContainer.appendChild(card);
                 
-                console.log(`✅ Produto carregado: ${productInfo.name}`);
+                console.log(`✅ Card criado para: ${productInfo.name} (categoria: ${finalCategory})`);
             } catch (error) {
                 console.error(`❌ Erro ao processar produto ${file.name}:`, error);
             }
-        }
-        
-        // Salvar no cache
-        categoryCache[category] = allProducts;
+        });
         
         // Adicionar animação de entrada
-        animateProductCards();
-        
-        // Configurar filtros após carregar produtos
         setTimeout(() => {
-            setupFiltersAndSort();
-        }, 600);
+            animateProductCards();
+        }, 100);
         
-        console.log(`📦 Carregados ${allProducts.length} produtos da categoria ${category}`);
+        console.log(`🎉 Carregamento concluído! ${categoryProducts.length} produtos carregados.`);
         
     } catch (error) {
         console.error('❌ Erro ao carregar produtos:', error);
         productsContainer.innerHTML = `
             <div style="text-align: center; padding: 3rem; color: #666;">
                 <h3>Erro ao carregar produtos</h3>
-                <p>Verifique a configuração do Google Drive:</p>
-                <ul style="text-align: left; display: inline-block; margin-top: 1rem;">
-                    <li>A pasta está pública?</li>
-                    <li>A API Key está correta?</li>
-                    <li>O ID da pasta está correto?</li>
-                </ul>
-                <p style="margin-top: 1rem;"><small>Erro: ${error.message}</small></p>
+                <p>Detalhes do erro: ${error.message}</p>
+                <button onclick="loadCategoryProductsFixed('${category}')" style="margin-top: 1rem; padding: 10px 20px; background: var(--primary-color); color: white; border: none; border-radius: 5px; cursor: pointer;">
+                    Tentar novamente
+                </button>
             </div>
         `;
     }
+}
+
+function removeDuplicateProducts() {
+    const productsContainer = document.getElementById('products-container');
+    if (!productsContainer) return;
+    
+    const cards = productsContainer.querySelectorAll('.product-card');
+    const seenIds = new Set();
+    let duplicatesRemoved = 0;
+    
+    cards.forEach(card => {
+        const productId = card.dataset.productId;
+        if (seenIds.has(productId)) {
+            card.remove();
+            duplicatesRemoved++;
+        } else {
+            seenIds.add(productId);
+        }
+    });
+    
+    if (duplicatesRemoved > 0) {
+        console.log(`🧹 Removidas ${duplicatesRemoved} duplicatas do DOM`);
+    }
+}
+
+// Função para carregar produtos de uma categoria específica (versão original corrigida)
+async function loadCategoryProducts(category) {
+    return await loadCategoryProductsFixed(category);
 }
 
 // Função para carregar todos os produtos de todas as categorias
@@ -784,12 +675,12 @@ async function loadAllProducts() {
         productsContainer.innerHTML = '';
         
         // Processar todos os produtos
-        allProductsCache.forEach(file => {
+        for (const file of allProductsCache) {
             const category = categorizeProductFromFileName(file.name);
             const productInfo = parseProductFileName(file.name);
-            const card = createProductCardFromDrive(file, productInfo, category);
+            const card = await createProductCardFromDrive(file, productInfo, category);
             productsContainer.appendChild(card);
-        });
+        }
         
         // Adicionar animação de entrada
         animateProductCards();
@@ -808,6 +699,247 @@ async function loadAllProducts() {
             </div>
         `;
     }
+}
+
+// Função para carregar produtos dinamicamente (versão para home)
+async function loadProducts() {
+    try {
+        // Buscar todos os produtos se ainda não foram carregados
+        if (allProductsCache.length === 0) {
+            const files = await fetchAllProducts();
+            allProductsCache = files.filter(file => file.name.match(/\.(jpg|jpeg|png|webp)$/i));
+        }
+        
+        const productsContainer = document.getElementById('products-container');
+        const promotionsContainer = document.getElementById('promotions-container');
+        
+        if (productsContainer) {
+            // Carregar alguns produtos normais (não promoções) para a seção "Novidades"
+            const regularProducts = allProductsCache.filter(file => {
+                const productInfo = parseProductFileName(file.name);
+                return !productInfo.isPromotion;
+            }).slice(0, 8); // Pegar apenas os primeiros 8 produtos
+            
+            for (const file of regularProducts) {
+                const category = categorizeProductFromFileName(file.name);
+                const productInfo = parseProductFileName(file.name);
+                const card = await createProductCardFromDrive(file, productInfo, category);
+                productsContainer.appendChild(card);
+            }
+        }
+        
+        if (promotionsContainer) {
+            // Carregar produtos em promoção para a seção "Promoções"
+            const promotionProducts = allProductsCache.filter(file => {
+                const productInfo = parseProductFileName(file.name);
+                return productInfo.isPromotion;
+            }).slice(0, 6); // Pegar apenas os primeiros 6 produtos em promoção
+            
+            for (const file of promotionProducts) {
+                const category = categorizeProductFromFileName(file.name);
+                const productInfo = parseProductFileName(file.name);
+                const card = await createProductCardFromDrive(file, productInfo, category);
+                promotionsContainer.appendChild(card);
+            }
+        }
+        
+        // Animar cards após carregamento
+        setTimeout(animateProductCards, 100);
+        
+    } catch (error) {
+        console.error('Erro ao carregar produtos para home:', error);
+        
+        // Fallback: usar produtos estáticos se houver erro
+        const produtos = [];
+        
+        const productsContainer = document.getElementById('products-container');
+        if (productsContainer) {
+            produtos.forEach(produto => {
+                const card = createFallbackProductCard(produto);
+                productsContainer.appendChild(card);
+            });
+        }
+    }
+}
+
+// Função para carregar produtos até R$ 6,00
+async function loadBudgetProducts() {
+    // Filtrar produtos com preço até 6 reais
+    console.log('Carregando produtos até R$ 6,00...');
+    
+    const productsContainer = document.getElementById('products-container');
+    if (!productsContainer) return;
+    
+    showLoadingState(productsContainer);
+    
+    setTimeout(async () => {
+        try {
+            // Buscar todos os produtos se ainda não foram carregados
+            if (allProductsCache.length === 0) {
+                const files = await fetchAllProducts();
+                allProductsCache = files.filter(file => file.name.match(/\.(jpg|jpeg|png|webp)$/i));
+            }
+            
+            // Filtrar produtos até R$ 6,00
+            const budgetProducts = allProductsCache.filter(file => {
+                const productInfo = parseProductFileName(file.name);
+                const price = parseFloat(productInfo.price.replace('R$ ', '').replace(',', '.'));
+                return price <= 6.00;
+            });
+            
+            productsContainer.innerHTML = '';
+            
+            if (budgetProducts.length === 0) {
+                productsContainer.innerHTML = `
+                    <div style="text-align: center; padding: 3rem; color: #666;">
+                        <h3>Nenhum produto encontrado</h3>
+                        <p>Não há produtos até R$ 6,00 disponíveis no momento.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            for (const file of budgetProducts) {
+                const category = categorizeProductFromFileName(file.name);
+                const productInfo = parseProductFileName(file.name);
+                const card = await createProductCardFromDrive(file, productInfo, category);
+                productsContainer.appendChild(card);
+            }
+            
+            animateProductCards();
+        } catch (error) {
+            console.error('Erro ao carregar produtos até R$ 6,00:', error);
+            productsContainer.innerHTML = `
+                <div style="text-align: center; padding: 3rem; color: #666;">
+                    <h3>Erro ao carregar produtos</h3>
+                    <p>Tente novamente mais tarde.</p>
+                </div>
+            `;
+        }
+    }, 600);
+}
+
+// Função para carregar produtos até R$ 6,00 por categoria
+async function loadBudgetProductsByCategory(category) {
+    console.log(`Carregando produtos até R$ 6,00 da categoria ${category}...`);
+    
+    const productsContainer = document.getElementById('products-container');
+    if (!productsContainer) return;
+    
+    showLoadingState(productsContainer);
+    
+    setTimeout(async () => {
+        try {
+            // Buscar todos os produtos se ainda não foram carregados
+            if (allProductsCache.length === 0) {
+                const files = await fetchAllProducts();
+                allProductsCache = files.filter(file => file.name.match(/\.(jpg|jpeg|png|webp)$/i));
+            }
+            
+            // Filtrar produtos da categoria até R$ 6,00
+            const budgetCategoryProducts = allProductsCache.filter(file => {
+                const detectedCategory = categorizeProductFromFileName(file.name);
+                const productInfo = parseProductFileName(file.name);
+                const price = parseFloat(productInfo.price.replace('R$ ', '').replace(',', '.'));
+                return detectedCategory === category && price <= 6.00;
+            });
+            
+            productsContainer.innerHTML = '';
+            
+            if (budgetCategoryProducts.length === 0) {
+                productsContainer.innerHTML = `
+                    <div style="text-align: center; padding: 3rem; color: #666;">
+                        <h3>Nenhum produto encontrado</h3>
+                        <p>Não há produtos de "${getCategoryName(category)}" até R$ 6,00 disponíveis.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            for (const file of budgetCategoryProducts) {
+                const productInfo = parseProductFileName(file.name);
+                const card = await createProductCardFromDrive(file, productInfo, category);
+                productsContainer.appendChild(card);
+            }
+            
+            animateProductCards();
+        } catch (error) {
+            console.error('Erro ao carregar produtos até R$ 6,00 por categoria:', error);
+            productsContainer.innerHTML = `
+                <div style="text-align: center; padding: 3rem; color: #666;">
+                    <h3>Erro ao carregar produtos</h3>
+                    <p>Tente novamente mais tarde.</p>
+                </div>
+            `;
+        }
+    }, 400);
+}
+
+// Função para verificar se a configuração do Google Drive está correta
+async function checkGoogleDriveConfig() {
+    try {
+        // Verificar se o backend está funcionando
+        const response = await fetch(`${GOOGLE_DRIVE_CONFIG.BACKEND_API_URL?.replace('/produtos', '/status') || ''}`);
+        
+        if (response && response.ok) {
+            const data = await response.json();
+            if (data.success) {
+                console.log(`✅ Backend conectado! Pasta: "${data.folder}"`);
+                return true;
+            }
+        }
+        
+        console.warn('⚠️ Backend não está respondendo corretamente');
+        
+        // Fallback: testar conexão direta com Google Drive
+        return await testGoogleDriveConnection();
+    } catch (error) {
+        console.error('❌ Erro ao conectar com backend:', error);
+        console.log('💡 Tentando conexão direta com Google Drive...');
+        
+        // Fallback: testar conexão direta com Google Drive
+        return await testGoogleDriveConnection();
+    }
+}
+
+// Slideshow functionality for hero section
+let slideIndex = 0;
+
+function showSlides() {
+    let i;
+    let slides = document.getElementsByClassName("slide");
+    let dots = document.getElementsByClassName("dot");
+    
+    if (slides.length === 0) return; // Se não há slides, não faz nada
+    
+    // Hide all slides
+    for (i = 0; i < slides.length; i++) {
+        slides[i].style.display = "none";
+    }
+    
+    // Remove active class from dots
+    for (i = 0; i < dots.length; i++) {
+        dots[i].className = dots[i].className.replace(" active", "");
+    }
+    
+    // Increment slide index
+    slideIndex++;
+    
+    // Reset if at end
+    if (slideIndex > slides.length) {
+        slideIndex = 1;
+    }
+    
+    // Display current slide and mark dot as active
+    if (slides[slideIndex-1]) {
+        slides[slideIndex-1].style.display = "block";
+    }
+    if (dots[slideIndex-1]) {
+        dots[slideIndex-1].className += " active";
+    }
+    
+    // Change slide every 4 seconds
+    setTimeout(showSlides, 4000);
 }
 
 // Função para mostrar estado de carregamento
@@ -842,164 +974,6 @@ function animateProductCards() {
             card.style.transform = 'translateY(0)';
         }, index * 100);
     });
-}
-
-// Função para renderizar produtos do cache
-function renderProductsFromCache(products, container) {
-    container.innerHTML = '';
-    products.forEach(product => {
-        container.appendChild(product.cloneNode(true));
-    });
-    animateProductCards();
-}
-
-// Função para criar um card de produto (mantida para compatibilidade com código legado)
-function createProductCard(filename, isPromotion, category = '') {
-    // Esta função é mantida para compatibilidade, mas não será mais usada
-    // com a integração do Google Drive
-    console.warn('createProductCard (legado) chamada. Use createProductCardFromDrive para Google Drive.');
-    
-    const productInfo = parseProductFileName(filename);
-    const mockFile = { 
-        name: filename, 
-        id: 'mock-id',
-        thumbnailLink: null
-    };
-    
-    return createProductCardFromDrive(mockFile, productInfo, category);
-}
-
-// Função para verificar se a configuração do Google Drive está correta
-async function checkGoogleDriveConfig() {
-    if (GOOGLE_DRIVE_CONFIG.PRODUTOS_FOLDER_ID === 'SUA_PASTA_PRODUTOS_ID_AQUI' || 
-        GOOGLE_DRIVE_CONFIG.API_KEY === 'SUA_API_KEY_AQUI') {
-        console.warn('⚠️ Configuração do Google Drive não foi definida!');
-        console.log('📋 Para configurar:');
-        console.log('1. Substitua PRODUTOS_FOLDER_ID pelo ID da pasta "GF Store/Produtos"');
-        console.log('2. Substitua API_KEY pela sua chave da API do Google Drive');
-        console.log('3. Certifique-se que a pasta tem permissão pública de visualização');
-        return false;
-    }
-    
-    try {
-        // Teste simples para verificar se a API está funcionando
-        const testUrl = `${GOOGLE_DRIVE_CONFIG.API_BASE_URL}/files/${GOOGLE_DRIVE_CONFIG.PRODUTOS_FOLDER_ID}?key=${GOOGLE_DRIVE_CONFIG.API_KEY}&fields=name`;
-        const response = await fetch(testUrl);
-        
-        if (response.ok) {
-            const data = await response.json();
-            console.log(`✅ Google Drive conectado com sucesso! Pasta: "${data.name}"`);
-            return true;
-        } else {
-            console.error('❌ Erro na configuração do Google Drive:', response.status, response.statusText);
-            return false;
-        }
-    } catch (error) {
-        console.error('❌ Erro ao conectar com Google Drive:', error);
-        return false;
-    }
-}
-
-// Função utilitária para obter ID da pasta do Google Drive pela URL
-function extractFolderIdFromUrl(url) {
-    // Extrai ID de URLs como: https://drive.google.com/drive/folders/ID_DA_PASTA
-    const match = url.match(/\/folders\/([a-zA-Z0-9-_]+)/);
-    if (match) {
-        return match[1];
-    }
-    console.warn('URL inválida. Use uma URL no formato: https://drive.google.com/drive/folders/ID_DA_PASTA');
-    return null;
-
-    const categoryNames = {
-        'shorts': 'Shorts',
-        'camisas': 'Camisas',
-        'calcas': 'Calças',
-        'dry-fits': 'Dry Fits',
-        'meias': 'Meias',
-        'acessorios': 'Acessórios',
-        'outros': 'Outros'
-    };
-    return categoryNames[category] || category;
-}
-
-// Função para carregar produtos até R$ 6,00
-function loadBudgetProducts() {
-    const productsContainer = document.getElementById('products-container');
-    if (!productsContainer) return;
-    
-    showLoadingState(productsContainer);
-    
-    setTimeout(() => {
-        productsContainer.innerHTML = '';
-        
-        Object.keys(produtosAte6Reais).forEach(category => {
-            produtosAte6Reais[category].forEach(produto => {
-                const card = createProductCard(produto, false, category);
-                productsContainer.appendChild(card);
-            });
-        });
-        
-        animateProductCards();
-    }, 600);
-}
-
-// Função para carregar produtos até R$ 6,00 por categoria
-function loadBudgetProductsByCategory(category) {
-    const productsContainer = document.getElementById('products-container');
-    if (!productsContainer) return;
-    
-    showLoadingState(productsContainer);
-    
-    setTimeout(() => {
-        productsContainer.innerHTML = '';
-        
-        if (produtosAte6Reais[category]) {
-            produtosAte6Reais[category].forEach(produto => {
-                const card = createProductCard(produto, false, category);
-                productsContainer.appendChild(card);
-            });
-        }
-        
-        animateProductCards();
-    }, 400);
-}
-
-// Função para carregar produtos dinamicamente (versão para home)
-function loadProducts() {
-    // Para a página inicial, carregar alguns produtos de cada categoria
-    const produtos = [
-        'Shorts-Moletom-Cinza-49.90.jpg',
-        'Camisas-Social-Branca-89.90.jpg',
-        'Calcas-Jeans-Skinny-119.90.jpg',
-        'DryFits-Basica-Preta-34.90.jpg'
-    ];
-    
-    const promocoes = [
-        'Shorts-Premium-Jeans-89.90-49.90.jpg',
-        'Camisas-Kit-Social-Pack2-179.90-109.90.jpg',
-        'Calcas-Jeans-Premium-199.90-119.90.jpg'
-    ];
-    
-    // Carregar produtos normais
-    const productsContainer = document.getElementById('products-container');
-    if (productsContainer) {
-        produtos.forEach(produto => {
-            const card = createProductCard(produto, false);
-            productsContainer.appendChild(card);
-        });
-    }
-    
-    // Carregar promoções
-    const promotionsContainer = document.getElementById('promotions-container');
-    if (promotionsContainer) {
-        promocoes.forEach(promocao => {
-            const card = createProductCard(promocao, true);
-            promotionsContainer.appendChild(card);
-        });
-    }
-    
-    // Animar cards após carregamento
-    setTimeout(animateProductCards, 100);
 }
 
 // Funções de interação com produtos
@@ -1305,7 +1279,7 @@ function getPriceValue(card) {
     const priceText = priceElement.textContent || priceElement.innerText || '';
     console.log('Texto do preço encontrado:', priceText); // Debug
     
-    // Remove 'R$', espaços e converte vírgula para ponto
+    // Remove 'R, espaços e converte vírgula para ponto
     const numericPrice = priceText.replace('R$', '').replace(/\s/g, '').replace(',', '.');
     const price = parseFloat(numericPrice) || 0;
     
@@ -1617,63 +1591,6 @@ function trackProductOrder(productName) {
     console.log(`Product ordered: ${productName}`);
 }
 
-// Função principal de inicialização
-async function initializeApp() {
-    console.log('🚀 Inicializando GF Store...');
-    
-    try {
-        // Verificar configuração do Google Drive
-        const driveConfigOk = await checkGoogleDriveConfig();
-        if (!driveConfigOk) {
-            console.warn('⚠️ Google Drive não configurado corretamente. Usando modo de fallback.');
-        }
-        
-        // Configurar slideshow apenas se existir
-        if (document.querySelector('.slide')) {
-            showSlides();
-        }
-        
-        // Configurar carrossel de informações apenas se existir
-        if (document.querySelector('.info-box')) {
-            setupInfoCarousel();
-        }
-        
-        // Configurar menu mobile - SEMPRE
-        setupMobileMenu();
-        
-        // Configurar filtros e ordenação
-        setupFiltersAndSort();
-        
-        // Configurar busca
-        setupSearch();
-        
-        // Carregar produtos (dependendo da página)
-        if (document.getElementById('products-container') || document.getElementById('promotions-container')) {
-            loadProducts();
-        }
-        
-        // Carregar favoritos salvos
-        setTimeout(() => {
-            try {
-                loadFavorites();
-            } catch (error) {
-                console.error('Erro ao carregar favoritos:', error);
-            }
-        }, 500);
-        
-        // Event listeners globais
-        setupGlobalEventListeners();
-        
-        // Lazy loading para imagens
-        setupLazyLoading();
-        
-        console.log('✅ GF Store inicializada com sucesso!');
-        
-    } catch (error) {
-        console.error('❌ Erro durante a inicialização:', error);
-    }
-}
-
 function setupGlobalEventListeners() {
     try {
         // ESC para fechar modal
@@ -1814,6 +1731,63 @@ function setupLazyLoading() {
     }
 }
 
+// Função principal de inicialização
+async function initializeApp() {
+    console.log('🚀 Inicializando GF Store...');
+    
+    try {
+        // Verificar configuração do Google Drive
+        const driveConfigOk = await checkGoogleDriveConfig();
+        if (!driveConfigOk) {
+            console.warn('⚠️ Google Drive não configurado corretamente. Usando modo de fallback.');
+        }
+        
+        // Configurar slideshow apenas se existir
+        if (document.querySelector('.slide')) {
+            showSlides();
+        }
+        
+        // Configurar carrossel de informações apenas se existir
+        if (document.querySelector('.info-box')) {
+            setupInfoCarousel();
+        }
+        
+        // Configurar menu mobile - SEMPRE
+        setupMobileMenu();
+        
+        // Configurar filtros e ordenação
+        setupFiltersAndSort();
+        
+        // Configurar busca
+        setupSearch();
+        
+        // Carregar produtos (dependendo da página)
+        if (document.getElementById('products-container') || document.getElementById('promotions-container')) {
+            loadProducts();
+        }
+        
+        // Carregar favoritos salvos
+        setTimeout(() => {
+            try {
+                loadFavorites();
+            } catch (error) {
+                console.error('Erro ao carregar favoritos:', error);
+            }
+        }, 500);
+        
+        // Event listeners globais
+        setupGlobalEventListeners();
+        
+        // Lazy loading para imagens
+        setupLazyLoading();
+        
+        console.log('✅ GF Store inicializada com sucesso!');
+        
+    } catch (error) {
+        console.error('❌ Erro durante a inicialização:', error);
+    }
+}
+
 // Initialize when page loads
 window.addEventListener('DOMContentLoaded', function() {
     try {
@@ -1835,3 +1809,128 @@ window.addEventListener('load', function() {
         console.error('Erro no window load:', error);
     }
 });
+
+// 8. FUNÇÃO DE TESTE para depuração
+async function debugImageIssues() {
+    console.log('🔍 === DEBUG DE PROBLEMAS COM IMAGENS ===\n');
+    
+    try {
+        const files = await fetchAllProductsWithDebug();
+        
+        if (files.length === 0) {
+            console.log('❌ Nenhum arquivo encontrado');
+            return;
+        }
+        
+        console.log(`📁 Testando primeiros 3 arquivos de ${files.length} total...\n`);
+        
+        for (let i = 0; i < Math.min(3, files.length); i++) {
+            const file = files[i];
+            console.log(`\n📸 === Arquivo ${i + 1}: ${file.name} ===`);
+            console.log(`ID: ${file.id}`);
+            
+            // Testar diferentes URLs
+            const thumbnailUrl = `https://drive.google.com/thumbnail?id=${file.id}&sz=w400-h400`;
+            const directUrl = `https://drive.google.com/uc?export=view&id=${file.id}`;
+            
+            console.log(`URL Thumbnail: ${thumbnailUrl}`);
+            console.log(`URL Direta: ${directUrl}`);
+            
+            // Testar carregamento
+            await testSingleImage(thumbnailUrl, `${file.name} (thumbnail)`);
+            await testSingleImage(directUrl, `${file.name} (direct)`);
+        }
+        
+    } catch (error) {
+        console.error('❌ Erro no debug:', error);
+    }
+}
+
+function testSingleImage(url, name) {
+    return new Promise((resolve) => {
+        const img = new Image();
+        const startTime = Date.now();
+        
+        const timeout = setTimeout(() => {
+            console.log(`⏰ TIMEOUT (3s): ${name}`);
+            resolve(false);
+        }, 3000);
+        
+        img.onload = function() {
+            clearTimeout(timeout);
+            const loadTime = Date.now() - startTime;
+            console.log(`✅ SUCESSO (${loadTime}ms): ${name} - ${this.naturalWidth}x${this.naturalHeight}`);
+            resolve(true);
+        };
+        
+        img.onerror = function() {
+            clearTimeout(timeout);
+            const loadTime = Date.now() - startTime;
+            console.log(`❌ ERRO (${loadTime}ms): ${name}`);
+            resolve(false);
+        };
+        
+        img.src = url;
+    });
+}
+
+// === FUNÇÕES PARA TESTAR NO CONSOLE ===
+
+// Função para testar carregamento de imagens do Google Drive
+async function testImageLoading() {
+    console.log('🧪 Testando carregamento de imagens...');
+    
+    try {
+        const files = await fetchAllProductsWithDebug();
+        if (files.length === 0) {
+            console.log('❌ Nenhum arquivo encontrado para teste');
+            return;
+        }
+        
+        console.log(`🔍 Testando ${Math.min(3, files.length)} imagens...`);
+        
+        for (let i = 0; i < Math.min(3, files.length); i++) {
+            const file = files[i];
+            console.log(`\n📸 Testando: ${file.name}`);
+            
+            const success = await debugImageLoad(file);
+            console.log(`Resultado: ${success ? '✅ Sucesso' : '❌ Falhou'}`);
+        }
+        
+        console.log('\n🎯 Teste de imagens concluído!');
+    } catch (error) {
+        console.error('❌ Erro no teste:', error);
+    }
+}
+
+// Função para debug completo
+async function debugCompleto() {
+    console.log('🔧 === DEBUG COMPLETO DO SISTEMA ===\n');
+    
+    // 1. Testar conexão
+    console.log('1️⃣ Testando conexão com Google Drive...');
+    const connectionOk = await testGoogleDriveConnection();
+    console.log(`Resultado: ${connectionOk ? '✅' : '❌'}\n`);
+    
+    // 2. Testar busca de arquivos
+    console.log('2️⃣ Testando busca de arquivos...');
+    const files = await fetchAllProductsWithDebug();
+    console.log(`Arquivos encontrados: ${files.length}\n`);
+    
+    // 3. Testar carregamento de imagens
+    console.log('3️⃣ Testando carregamento de imagens...');
+    await testImageLoading();
+    
+    console.log('\n🎉 Debug completo finalizado!');
+}
+
+// Exportar funções principais para uso global
+window.GFStore = {
+    loadCategoryProducts: loadCategoryProductsFixed,
+    loadAllProducts,
+    loadProducts,
+    testConnection: testGoogleDriveConnection,
+    debugImages: testImageLoading,
+    debugCompleto,
+    checkConfig: checkGoogleDriveConfig
+};
